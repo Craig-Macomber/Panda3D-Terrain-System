@@ -6,14 +6,15 @@ from direct.showbase.ShowBase import ShowBase
 from direct.showbase.DirectObject import DirectObject
 import direct.directbase.DirectStart
 from direct.filter.CommonFilters import CommonFilters
+import math
+from direct.task import Task
+from direct.gui.OnscreenText import OnscreenText
+from direct.actor.Actor import Actor
+from sys import exit
 
 from bakery import *
 from renderer import *
 
-import math
-
-from direct.task import Task
-from pandac.PandaModules import PandaSystem
 print PandaSystem.getVersionString()
 backBinName="background"
 
@@ -29,94 +30,67 @@ b=LiveBakery(None,"bakery2")
 
 
 tileSize=.05
+terrainScale=100
+
 
 # Make the main (highest LOD) tiler
-n=RenderAutoTiler('render',b,tileSize,base.cam,4.5,5.5)
+n=RenderAutoTiler('render',b,tileSize,base.cam,3.0,4.0)
 n.reparentTo(render)
-
+n.setScale(terrainScale)
 
 useLowLOD=True
 useMidLOD=True
 
-# Make the background LOD tilers. This causes lots of over draw
-# The over draw issues should be resolved in the future somehow.
 
+
+# Setup a card maker for depth reset cards for between LOD draws
 cm=CardMaker("depthwiper")
 cm.setFrameFullscreenQuad()
 
-'''
-c.reparentTo(base.camera)
-c.setDepthTest(False)
-c.setDepthWrite(True)
-c.setBin(backBinName,2)
-dist=10000
-c.setY(dist)
-c.setScale(dist)
-c.clearShader()
-c.setAttrib(DepthTestAttrib.make(RenderAttrib.MAlways))
-c.setAttrib(ColorWriteAttrib.make(ColorWriteAttrib.MNone))
-'''
-
-dist=10000
+# Make node to hold depth reset cards
+dist=100000
 clearCardHolder=NodePath('clearCardHolder')
 clearCardHolder.reparentTo(base.camera)
 clearCardHolder.setDepthTest(False)
-
-c=NodePath(cm.generate())
-c.reparentTo(clearCardHolder)
-c.setBin(backBinName,11)
-
-
-c=NodePath(cm.generate())
-c.reparentTo(clearCardHolder)
-c.setBin(backBinName,1)
 
 clearCardHolder.setY(dist)
 clearCardHolder.setScale(dist)
 clearCardHolder.setAttrib(DepthTestAttrib.make(RenderAttrib.MAlways))
 clearCardHolder.setAttrib(ColorWriteAttrib.make(ColorWriteAttrib.MNone))
-if useMidLOD:
-    bg1=RenderAutoTiler('render',b,tileSize*8,base.cam,1.5,2.0)
-    bg1.reparentTo(render)
-    #bg1.setDepthTest(False)
-    #bg1.setDepthWrite(False)
-    bg1.setBin(backBinName,10)
-    bg1.setScale(100)
 
-if useLowLOD:
-    bg2=RenderAutoTiler('render',b,tileSize*64,base.cam,1.0,1.2)
-    bg2.reparentTo(render)
-    bg2.setDepthTest(False)
-    bg2.setDepthWrite(False)
-    bg2.setBin(backBinName,0)
-    bg2.setScale(100)
+def addTerrainLOD(sort,scale,addDist,removeDist):
+    bg=RenderAutoTiler('render',b,tileSize*scale,base.cam,addDist,removeDist)
+    bg.reparentTo(render)
+    bg.setBin(backBinName,sort)
+    bg.setScale(terrainScale)
+    
+    c=NodePath(cm.generate())
+    c.reparentTo(clearCardHolder)
+    c.setBin(backBinName,sort+1)
+    
+    return bg
 
+# Make the background LOD tilers. This causes lots of over draw
+if useMidLOD: bg1=addTerrainLOD(10,4,1.7,2.0)
+if useLowLOD: bg2=addTerrainLOD(0,16,1.3,1.4)
 
-
-
-n.setScale(100)
-
-
-# Show the buffers
-#base.bufferViewer.toggleEnable()
 
 # Make a little UI input handeling class
 class UI(DirectObject):
     def __init__(self):
         self.accept("v", base.bufferViewer.toggleEnable)
-        self.accept("V", base.bufferViewer.toggleEnable)
         self.accept("p", self.save)
         self.accept("x", self.analize)
         self.accept("c", self.color)
         base.bufferViewer.setPosition("llcorner")
         base.bufferViewer.setCardSize(.25, 0.0)
+        
     def save(self):
-        #t[0][0].saveMaps("pics/map_")
         i=0
         for t in n.getTiles():
             t.bakedTile.saveMaps("pics/map_"+str(i)+"_")
             i+=1
-        pass
+            
     def analize(self):
         print ""
         render.analyze()
@@ -168,19 +142,6 @@ base.disableMouse()
 camLens=base.camLens
 camLens.setNear(.1)
 
-
-
-
-
-from direct.gui.OnscreenText import OnscreenText
-from direct.actor.Actor import Actor
-from direct.task.Task import Task
-from direct.showbase.DirectObject import DirectObject
-import random, sys, os, math
-
-# Figure out what directory this program is in.
-MYDIR=os.path.abspath(sys.path[0])
-MYDIR=Filename.fromOsSpecific(MYDIR).getFullpath()
 
 #font = loader.loadFont("cmss12")
 font = TextNode.getDefaultFont()
@@ -237,7 +198,7 @@ class World(DirectObject):
 
         # Accept the control keys for movement and rotation
         
-        self.accept("escape", sys.exit)
+        self.accept("escape", exit)
 
         self.keyMap = {}
         
@@ -267,20 +228,19 @@ class World(DirectObject):
         
         base.disableMouse()
         base.camera.setH(180)
-        #base.camera.setPos(self.ralph.getX(),self.ralph.getY()+10,2)
-        #base.camera.reparentTo(n)
         
         #self.ralph.enableBlend()
         #self.ralph.setControlEffect("run",1)
         #self.ralph.setControlEffect("walk",0)
-        
-        base.camera.reparentTo(self.ralph)
-        self.camDist=100.0
         #print self.ralph.listJoints()
         #print self.ralph.getAnimNames()
         
-    #Records the state of the arrow keys
+        base.camera.reparentTo(self.ralph)
+        self.camDist=100.0
+        
+    
     def setKey(self, key, value):
+        """Records the state of key"""
         self.keyMap[key] = value
     
     def addKey(self,key,name,allowShift=True):
@@ -292,20 +252,12 @@ class World(DirectObject):
             self.addKey("shift-"+key,name,False)
         
         self.keyMap[name]=0
-    # Accepts arrow keys to move either the player or the menu cursor,
-    # Also deals with grid checking and collision detection
+
     def move(self, task):
 
         # Get the time elapsed since last frame. We need this
         # for framerate-independent movement.
         elapsed = globalClock.getDt()
-
-        # If the camera-left key is pressed, move camera left.
-        # If the camera-right key is pressed, move camera right.
-        #base.camera.setPos(self.ralph,Vec3(0,200,0))
-        #base.camera.lookAt(self.ralph)
-        
-        
         
         turnRightAmount=self.keyMap["turnRight"]-self.keyMap["turnLeft"]
         turnUpAmmount=self.keyMap["turnUp"]-self.keyMap["turnDown"]
@@ -324,23 +276,15 @@ class World(DirectObject):
         startpos = self.ralph.getPos()
 
         # If a move-key is pressed, move ralph in the specified direction.
-        forwardMove=0.0
-        rightMove=0.0
-        if self.keyMap["forward"]:
-            forwardMove+=1.0
-        if self.keyMap["backward"]:
-            forwardMove-=.5
-        if self.keyMap["left"]:
-            rightMove-=.5
-        if self.keyMap["right"]:
-            rightMove+=.5
+        # Adding, subtracting and multiplying booleans for the keys here.
+        forwardMove=self.keyMap["forward"]-.5*self.keyMap["backward"]
+        rightMove=.5*(self.keyMap["right"]-self.keyMap["left"])
         
+        # Slow forward when moving diagonal
         forwardMove*=1.0-abs(rightMove)
         
-        if self.keyMap["hyper"]:
-            speed=10
-        else:
-            speed=1
+        speed=1+9*self.keyMap["hyper"]
+
         rightMove*=speed
         forwardMove*=speed
         
@@ -348,20 +292,17 @@ class World(DirectObject):
         self.ralph.setY(self.ralph, -elapsed*25*forwardMove)
         h=n.height(self.ralph.getX(n),self.ralph.getY(n))
         self.ralph.setZ(n,h)
-        
-        
-        
-        #self.ralph.setZ(10)
-        
-        # If ralph is moving, loop the run animation.
-        # If he is standing still, stop the animation.
+
         
         def sign(n):
             if n>=0: return 1
             #if n==0: return 0
             return -1
         
-        if rightMove!=0 or forwardMove!=0:
+        # If ralph is moving, loop the run animation.
+        # If he is standing still, stop the animation.
+        
+        if rightMove or forwardMove:
             self.ralph.setPlayRate(forwardMove+abs(rightMove)*sign(forwardMove), 'run')
             if self.isMoving is False:
                 self.ralph.loop("run")
@@ -374,45 +315,13 @@ class World(DirectObject):
                 self.ralph.pose("walk",5)
                 self.isMoving = False
 
-        # If the camera is too far from ralph, move it closer.
-        # If the camera is too close to ralph, move it farther.
-        
-        
-        '''
-        camvec = self.ralph.getPos() - base.camera.getPos()
-        
-        
-        camvec.setZ(0)
-        camdist = camvec.length()
-        camvec.normalize()
-        if (camdist > 10.0):
-            base.camera.setPos(base.camera.getPos() + camvec*(camdist-10))
-            camdist = 10.0
-        if (camdist < 5.0):
-            base.camera.setPos(base.camera.getPos() - camvec*(5-camdist))
-            camdist = 5.0
-        '''
-        
         # The camera should look in ralph's direction,
         # but it should also try to stay horizontal, so look at
         # a floater which hovers above ralph's head.
       
-        #self.floater.setPos(self.ralph.getPos())
         self.floater.setZ(10)
         base.camera.setPos(self.floater,0,0,0)
         base.camera.setPos(base.camera,0,-self.camDist,0)
-        
-        '''
-        base.camera.setZ(self.floater.getZ()+2.0)
-        base.camera.lookAt(self.floater)
-        '''
-        
-        #Here we multiply the values to get the amount of degrees to turn
-        #Restrain is used to make sure the values returned by getMouse are in the
-        #valid range. If this particular model were to turn more than this,
-        #significant tearing would be visable
-        #self.neck.setP(restrain(20) * 50)
-        #self.neck.setH(restrain(30) * 20)
         
 
         return Task.cont
