@@ -51,6 +51,7 @@ class Queue:
         self.buffs={}
         self.queue=[]
         self.currentItem=None
+        self.displayRegions={}
         
         self.renderFrame=0
         
@@ -73,21 +74,23 @@ class Queue:
                 self.currentBuff.addRenderTexture(self.currentItem.texture,GraphicsOutput.RTMCopyRam)
                 
                 self.cam=self.currentItem.getCam()
-                
-                dr = self.currentBuff.makeDisplayRegion(0, 1, 0, 1)
-                dr.setCamera(self.cam)
+
+                self.displayRegions[self.currentBuff].setCamera(self.cam)
+                self.displayRegions[self.currentBuff].setActive(True)
 
         else:
             if self.renderFrame>1:
                 # Should be rendered by now
                 tex = self.currentBuff.getTexture()
                 self.currentBuff.setActive(False)
+                self.displayRegions[self.currentBuff].setActive(False)
                 self.currentBuff.clearRenderTextures()
                 self.currentItem.callback(tex)
                 
                 self.currentItem.cleanUpCamCall(self.cam)
                 del self.cam
                 self.currentItem=None
+                
         
         return Task.cont
         
@@ -104,89 +107,9 @@ class Queue:
         else:
             mainWindow=base.win
             buff=mainWindow.makeTextureBuffer('QueueBuff'+str(size),width,height,Texture(),True)
+            dr=buff.makeDisplayRegion(0, 1, 0, 1)
             self.buffs[size]=buff
+            self.displayRegions[buff]=dr
             print "saved buffer "+str(size)
             
         return buff
-    
-    def renderTex(self, queueItem):
-        """
-        
-        This is where the map images are genrated.
-        A render to texture process is used.
-        
-        
-        """
-        
-        q=queueItem
-        
-        # Resolution of texture/buffer to be rendered
-        buff=self.getBuff(q.width,q.height)
-        
-        
-        buff.setActive(True)
-            
-        # maybe should use RTMCopyTexture?
-        mode=GraphicsOutput.RTMCopyRam if q.toRam else GraphicsOutput.RTMBindOrCopy
-        buff.addRenderTexture(q.texture,GraphicsOutput.RTMCopyRam)
-        
-        '''
-        c=q.getCam()
-        
-        p=c.getParent()
-        
-        cam=base.makeCamera(buff,useCamera=c)
-        
-        # Fix for stupid ShowBase.makeCamera having cam.reparentTo(self.camera)
-        # Remove when ShowBase is fixed
-        cam.reparentTo(p)
-        
-        '''
-        
-        dr = buff.makeDisplayRegion(0, 1, 0, 1)
-        dr.setCamera(q.getCam())
-        
-        """
-        
-        Here the texture is aauctually generated
-        For some unknowen reason, both calls to:
-        base.graphicsEngine.renderFrame() 
-        are needed or there are issues when using multiple textures.
-        The call to:
-        altRender.prepareScene(base.win.getGsg())
-        fixes this issue.
-        
-        
-        """
-        threaded=False
-        def waitAFrame():
-            if threaded:
-                i = self.frameCount
-                
-                # The + 2 is used because where frameCount gets updated in the frame
-                # and where this code runs in the frame
-                # are not really knowen.
-                while self.frameCount < i+2:
-                    #print i
-                    Thread.considerYield()
-            else:
-                base.graphicsEngine.renderFrame()
-                
-        
-        
-        # Comment out this line to cause the bug with multiple textures requireing an extra frame to
-        # work properly
-        #self.altRender.prepareScene(base.win.getGsg())
-        
-        
-        
-        
-        waitAFrame()
-        waitAFrame()
-        tex = buff.getTexture()
-        buff.setActive(False)
-        buff.clearRenderTextures()
-
-        
-        return tex
-        
