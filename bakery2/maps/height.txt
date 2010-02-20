@@ -1,0 +1,15 @@
+:Settings
+resolutionScale .5
+addPixels 1
+
+:Input
+baseHeight
+
+:Shader
+float h=(map_baseHeight.x-.1);
+if (h<0){
+return float4(0,0,0,1);
+}else{
+return float4(h,map_baseHeight.y,map_baseHeight.z,1);
+//return map_baseHeight;
+}

@@ -1,0 +1,45 @@
+:Settings
+resolutionScale .5
+addPixels 1
+
+:Tex2D
+smoothNoise
+
+:Shader
+float v=0;
+float scaler=2.1;
+float startScale=.04;
+float persistance=.5;
+float totalScale=0;
+
+float multNoiseScale=1/2.725;
+float roughnessScaler=.9;
+int i;
+for (i = 1; i <= 8; i++){
+  float s=tex2D(tex2D_smoothNoise,pos*startScale*pow(scaler,i)).x*2-1;
+  float r=tex2D(tex2D_smoothNoise,pos*startScale*pow(scaler,i)*multNoiseScale).x*2-1;
+  roughnessScaler*=(r*.9+persistance);
+  s=s*roughnessScaler*(r*.5+.5);
+  v=v+s;
+  totalScale=totalScale+pow(persistance,i);
+}
+
+
+v=v/totalScale;
+
+float h=v*1+.1;
+float4 c=float4(h);
+//h=h*256;
+//int r=floor(h);
+//h=h-r;
+//h=h*256;
+//int g=floor(h);
+//h=h-g;
+////h=h*256;
+//float b=h;
+//float4 c=float4(r/256.0,g/256.0,b,1);
+
+//float4 c=pack_4byte(h);
+
+c.w=1;
+return c;

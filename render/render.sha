@@ -1,0 +1,38 @@
+//Cg
+
+void vshader(
+    uniform float4x4 mat_modelproj,
+    in float4 vtx_position : POSITION,
+    in float2 vtx_texcoord0 : TEXCOORD0,
+    uniform float4 k_offset,
+    uniform float4 k_scale,
+    out float2 l_tex: TEXCOORD0,
+    out float2 l_pos: TEXCOORD1,
+    out float4 l_position : POSITION)
+{
+    l_position = mul(mat_modelproj, vtx_position);
+    l_pos = vtx_texcoord0.xy*k_scale.x+k_offset.xy;
+    l_tex=vtx_texcoord0.xy;
+}
+
+float4 shade(float2 pos, float4 map_waterDepth){
+
+if (map_waterDepth.x>0){
+return lerp(float4(.5,.5,.9,1),float4(0,0,1,1),map_waterDepth.x);
+}else{
+return float4(0,1,0,1);
+}
+
+}
+
+void fshader( 
+  in float2 l_tex: TEXCOORD0,
+
+  in uniform sampler2D tex_0: TEXUNIT0,
+  
+  in float2 l_pos: TEXCOORD1,
+  out float4 o_color: COLOR) 
+{ 
+o_color=tex2D(tex_0,l_tex);
+   // o_color=shade(l_pos, tex2D(tex_0,l_tex));
+} 

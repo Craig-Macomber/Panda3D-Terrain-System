@@ -1,0 +1,19 @@
+:Input
+waterDepth
+height
+#city
+
+
+:Shader
+float4 c;
+if (map_waterDepth.x>0){
+c.x=map_waterDepth.x+.5;
+}else{
+#c.y=1;
+}
+
+#c.z= map_city.w;
+
+c.w=5*(map_height.x-.4)+round(map_height.x)*.3;
+
+return c;
