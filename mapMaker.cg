@@ -1,0 +1,30 @@
+//Cg
+
+void vshader(
+    uniform float4x4 mat_modelproj,
+    in float4 vtx_position : POSITION,
+    uniform float4 k_offset,
+    uniform float4 k_scale,
+    out float2 l_tex: TEXCOORD0,
+    out float2 l_pos: TEXCOORD1,
+    out float4 l_position : POSITION)
+{
+    l_position = mul(mat_modelproj, vtx_position);
+    l_pos = vtx_position.xz*k_scale.x+k_offset.xy;
+    l_tex=vtx_position.xz;
+}
+
+float4 shade(float2 pos#paramsDef#){
+
+#source#
+
+}
+
+void fshader( 
+  in float2 l_tex: TEXCOORD0,
+  in float2 l_pos: TEXCOORD1,
+#tex#
+  out float4 o_color: COLOR) 
+{ 
+    o_color=shade(l_pos#params#);
+} 
