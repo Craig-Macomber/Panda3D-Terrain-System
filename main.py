@@ -98,7 +98,7 @@ n.setScale(100)
 
 
 # Show the buffers
-base.bufferViewer.toggleEnable()
+#base.bufferViewer.toggleEnable()
 
 # Make a little UI input handeling class
 class UI(DirectObject):
@@ -212,7 +212,7 @@ class World(DirectObject):
         self.inst3 = addInstructions(0.85, "Shift for hyper")
         self.inst3 = addInstructions(0.80, "X for analyze")
         self.inst3 = addInstructions(0.75, "C tints mid LOD")
-        self.inst3 = addInstructions(0.75, "V toggles buffer viewer")
+        self.inst3 = addInstructions(0.70, "V toggles buffer viewer")
         
         
         # Create the main character, Ralph
