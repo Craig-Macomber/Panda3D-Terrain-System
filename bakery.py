@@ -233,7 +233,7 @@ class Bakery:
 
         altCam=self.getRenderMapCam(rawTile, inputMaps, shader, size)
         
-        q=QueueItem(size,size,self._asyncRenderMapDone,self.getRenderMapCam, (callback,shader.name,callbackParams), (rawTile, inputMaps, shader, size),toRam=True)
+        q=QueueItem(size,size,self._asyncRenderMapDone,self.getRenderMapCam, (callback,shader.name,callbackParams), (rawTile, inputMaps, shader, size),toRam=False)
         qq.queue.append(q)
     
     def _asyncRenderMapDone(self,tex,callback,name,callbackParams):

@@ -316,26 +316,16 @@ class RenderTile(NodePath):
             #self.setTexOffset(t,-margin,-margin)
             #self.setTexScale(t,float(size+margin*2)/size)
             
-            
-            
-        
         self.setShaderInput("offset",bakedTile.x,bakedTile.y,0.0,0.0)
         self.setShaderInput("scale",bakedTile.scale)
-        
-        
+              
         # Set up the GeoMipTerrain
-        self.terrain = GeoMipTerrain("myDynamicTerrain")
-        
-        heightMapPath="pics/RenderTile_map_height.png"
+        self.terrain = GeoMipTerrain("TerrainTile")
         heightTex=bakedTile.renderMaps[node.specialMaps["height"]].tex
         heightTexSize=heightTex.getXSize()
-        #heightTex.makeRamImage()
-        #heightTex.makeRamMipmapImage(0)
-        heightTex.write(heightMapPath)
-        self.terrain.setHeightfield(Filename(heightMapPath))
-        #pnmImage=PNMImage()
-        #heightTex.store(pnmImage)
-        #self.terrain.setHeightfield(pnmImage)
+        pnmImage=PNMImage()
+        heightTex.store(pnmImage)
+        self.terrain.setHeightfield(pnmImage)
         
         
         # Set terrain properties
@@ -350,7 +340,8 @@ class RenderTile(NodePath):
         root = self.terrain.getRoot()
         root.reparentTo(self)
         
-        root.setScale(float(self.tileScale)/(heightTexSize-1),float(self.tileScale)/(heightTexSize-1),node.heightScale)
+        xyScale=float(self.tileScale)/(heightTexSize-1)
+        root.setScale(xyScale,xyScale,node.heightScale)
         
         # Generate it.
         self.terrain.generate()
