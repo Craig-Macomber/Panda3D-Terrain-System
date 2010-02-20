@@ -35,21 +35,56 @@ n=RenderAutoTiler('render',b,tileSize,base.cam,4.5,5.5)
 n.reparentTo(render)
 
 
-useLowLOD=False
-useMidLOD=False
+useLowLOD=True
+useMidLOD=True
 
 # Make the background LOD tilers. This causes lots of over draw
 # The over draw issues should be resolved in the future somehow.
+
+cm=CardMaker("depthwiper")
+cm.setFrameFullscreenQuad()
+
+'''
+c.reparentTo(base.camera)
+c.setDepthTest(False)
+c.setDepthWrite(True)
+c.setBin(backBinName,2)
+dist=10000
+c.setY(dist)
+c.setScale(dist)
+c.clearShader()
+c.setAttrib(DepthTestAttrib.make(RenderAttrib.MAlways))
+c.setAttrib(ColorWriteAttrib.make(ColorWriteAttrib.MNone))
+'''
+
+dist=10000
+clearCardHolder=NodePath('clearCardHolder')
+clearCardHolder.reparentTo(base.camera)
+clearCardHolder.setDepthTest(False)
+
+c=NodePath(cm.generate())
+c.reparentTo(clearCardHolder)
+c.setBin(backBinName,11)
+
+
+c=NodePath(cm.generate())
+c.reparentTo(clearCardHolder)
+c.setBin(backBinName,1)
+
+clearCardHolder.setY(dist)
+clearCardHolder.setScale(dist)
+clearCardHolder.setAttrib(DepthTestAttrib.make(RenderAttrib.MAlways))
+clearCardHolder.setAttrib(ColorWriteAttrib.make(ColorWriteAttrib.MNone))
 if useMidLOD:
-    bg1=RenderAutoTiler('render',b,tileSize*8,base.cam,1,1.3)
+    bg1=RenderAutoTiler('render',b,tileSize*8,base.cam,1.5,2.0)
     bg1.reparentTo(render)
-    bg1.setDepthTest(False)
-    bg1.setDepthWrite(False)
-    bg1.setBin(backBinName,1)
+    #bg1.setDepthTest(False)
+    #bg1.setDepthWrite(False)
+    bg1.setBin(backBinName,10)
     bg1.setScale(100)
 
 if useLowLOD:
-    bg2=RenderAutoTiler('render',b,tileSize*64,base.cam,1,1.1)
+    bg2=RenderAutoTiler('render',b,tileSize*64,base.cam,1.0,1.2)
     bg2.reparentTo(render)
     bg2.setDepthTest(False)
     bg2.setDepthWrite(False)
@@ -177,7 +212,9 @@ class World(DirectObject):
         self.inst3 = addInstructions(0.85, "Shift for hyper")
         self.inst3 = addInstructions(0.80, "X for analyze")
         self.inst3 = addInstructions(0.75, "C tints mid LOD")
-                
+        self.inst3 = addInstructions(0.75, "V toggles buffer viewer")
+        
+        
         # Create the main character, Ralph
 
         ralphStartPos = Vec3(0,0,0)
