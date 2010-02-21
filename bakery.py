@@ -224,14 +224,14 @@ class Bakery:
             mapCard.setTexture(*p)
         
         mapCard.reparentTo(altRender)
-        self.mapCard=mapCard
+        
+        # Comment out this line to cause the bug with multiple textures requireing an extra frame to work properly
+        altRender.prepareScene(base.win.getGsg())
         
         return altCam
         
     def asyncRenderMap(self, rawTile, inputMaps, shader, callback, callbackParams=()):
         size=int(round(tileMapSize*shader.resolutionScale+shader.addPixels))
-
-        altCam=self.getRenderMapCam(rawTile, inputMaps, shader, size)
         
         q=QueueItem(size,size,self._asyncRenderMapDone,self.getRenderMapCam, (callback,shader.name,callbackParams), (rawTile, inputMaps, shader, size),toRam=False)
         qq.queue.append(q)

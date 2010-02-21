@@ -78,18 +78,17 @@ class Queue:
                 self.displayRegions[self.currentBuff].setCamera(self.cam)
                 self.displayRegions[self.currentBuff].setActive(True)
 
-        else:
-            if self.renderFrame>1:
-                # Should be rendered by now
-                tex = self.currentBuff.getTexture()
-                self.currentBuff.setActive(False)
-                self.displayRegions[self.currentBuff].setActive(False)
-                self.currentBuff.clearRenderTextures()
-                self.currentItem.callback(tex)
-                
-                self.currentItem.cleanUpCamCall(self.cam)
-                del self.cam
-                self.currentItem=None
+        elif self.renderFrame>0:
+            # Should be rendered by now. Could potentially add extra wait here.
+            tex = self.currentBuff.getTexture()
+            self.currentBuff.setActive(False)
+            self.displayRegions[self.currentBuff].setActive(False)
+            self.currentBuff.clearRenderTextures()
+            self.currentItem.callback(tex)
+            
+            self.currentItem.cleanUpCamCall(self.cam)
+            del self.cam
+            self.currentItem=None
                 
         
         return Task.cont

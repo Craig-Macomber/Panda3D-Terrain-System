@@ -154,8 +154,6 @@ class RenderAutoTiler(RenderNode):
         self.removeThreshold=removeThreshold
         self.focus=focus
         
-        self.frameCount=0
-        
         
         self.currentGenTile=None
         
@@ -165,9 +163,6 @@ class RenderAutoTiler(RenderNode):
         
         
     def updateTiles(self,task):
-        self.frameCount+=1
-        
-        if self.frameCount<4: return task.cont
         
         """Make any needed tiles and remove any unneeded"""
         
@@ -212,7 +207,7 @@ class RenderAutoTiler(RenderNode):
         for t in toRemove:
             self.removeTile(t)
         
-        
+        # Add a tile if appropriate
         if self.currentGenTile is None:
             if len(needTiles)>0:
                 minTile,minDist=needTiles.popitem()
@@ -223,25 +218,16 @@ class RenderAutoTiler(RenderNode):
                 self.currentGenTile=minTile
                 x=minTile[0]*self.tileScale
                 y=minTile[1]*self.tileScale
-                self.tileSource.asyncGetTile(x,y,self.tileScale,self.asyncTileDone)
+                self.tileSource.asyncGetTile(x,y,self.tileScale,self._asyncTileDone)
                 
-        
-        
-        # Add needed tiles
-        '''
-        for n in needTiles:
-            t=self.addTile(self.tileSource.getTile(n[0]*self.tileScale,n[1]*self.tileScale,self.tileScale))
-            t.tileLoc=n
-            self.tilesMade+=1
-        '''        
+               
         return task.cont
     
-    def asyncTileDone(self,tile):
+    def _asyncTileDone(self,tile):
             t=self.addTile(tile)
             t.tileLoc=self.currentGenTile
             self.currentGenTile=None
             self.tilesMade+=1
-            
             
             
     def height(self,x,y):

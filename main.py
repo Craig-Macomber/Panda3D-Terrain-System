@@ -32,9 +32,11 @@ b=LiveBakery(None,"bakery2")
 tileSize=.05
 terrainScale=100
 
+focuse=NodePath("tilerFocuse")
+
 
 # Make the main (highest LOD) tiler
-n=RenderAutoTiler('render',b,tileSize,base.cam,3.0,4.0)
+n=RenderAutoTiler('render',b,tileSize,focuse,3.0,4.0)
 n.reparentTo(render)
 n.setScale(terrainScale)
 
@@ -59,7 +61,7 @@ clearCardHolder.setAttrib(DepthTestAttrib.make(RenderAttrib.MAlways))
 clearCardHolder.setAttrib(ColorWriteAttrib.make(ColorWriteAttrib.MNone))
 
 def addTerrainLOD(sort,scale,addDist,removeDist):
-    bg=RenderAutoTiler('render',b,tileSize*scale,base.cam,addDist,removeDist)
+    bg=RenderAutoTiler('render',b,tileSize*scale,focuse,addDist,removeDist)
     bg.reparentTo(render)
     bg.setBin(backBinName,sort)
     bg.setScale(terrainScale)
@@ -143,7 +145,6 @@ camLens=base.camLens
 camLens.setNear(.1)
 
 
-#font = loader.loadFont("cmss12")
 font = TextNode.getDefaultFont()
 
 # Function to put instructions on the screen.
@@ -185,6 +186,8 @@ class World(DirectObject):
         self.ralph.setScale(.02)
         self.ralph.setPos(ralphStartPos)
         self.ralph.setShaderAuto()
+        
+        focuse.reparentTo(self.ralph)
         
         #Now we use controlJoint to get a NodePath that's in control of his neck
         #This must be done before any animations are played
