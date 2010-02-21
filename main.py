@@ -1,4 +1,4 @@
-from pandac.PandaModules import *
+from panda3d.core import *
 
 loadPrcFile("TerrainConfig.prc")
 
@@ -84,6 +84,8 @@ class UI(DirectObject):
         self.accept("p", self.save)
         self.accept("x", self.analize)
         self.accept("c", self.color)
+        self.accept("o", base.toggleWireframe)
+        
         base.bufferViewer.setPosition("llcorner")
         base.bufferViewer.setCardSize(.25, 0.0)
         

@@ -1,4 +1,4 @@
-from pandac.PandaModules import *
+from panda3d.core import *
 from direct.showbase.ShowBase import ShowBase
 import direct.directbase.DirectStart
 
@@ -20,15 +20,6 @@ tileMapSize=64
 
 # Makes debugging shaders easier
 useShaderFiles=False
-
-def whiteSpaceSplit(source):
-    out=[]
-    for t in source.split('\t'):
-        for s in t.split(' '):
-            if len(s)>0:
-                out.append(s)
-    return out
-
 
 def pathPrefix():
     if base.appRunner!=None:
@@ -445,7 +436,7 @@ class MapShader:
         
         if "Settings" in d:
             for s in d["Settings"]:
-                t=whiteSpaceSplit(s)
+                t=s.split()
                 v=t[1]
                 m=t[0]
                 if m=='resolutionScale':

@@ -1,14 +1,12 @@
-from pandac.PandaModules import *
 from direct.showbase.ShowBase import ShowBase
 import direct.directbase.DirectStart
-from pandac.PandaModules import GeoMipTerrain
-from bakery import Tile, parseFile
-import bakery
-from math import *
+from panda3d.core import GeoMipTerrain, NodePath, TextureStage, Vec3, PNMImage
+
+from bakery import Tile, parseFile, loadTex
+from math import ceil
 
 useBruteForce=True
-        
-        
+
 class RenderNode(NodePath):
     def __init__(self,path):
         NodePath.__init__(self,path+"_render")
@@ -17,49 +15,11 @@ class RenderNode(NodePath):
         
         d=parseFile(path+'/texList.txt')
         
-        renderMapTypesConverter={
-            'MModulate':TextureStage.MModulate,
-            'MDecal':TextureStage.MDecal,
-            'MBlend':TextureStage.MBlend,
-            'MReplace':TextureStage.MReplace,
-            'MAdd':TextureStage.MAdd,
-            'MCombine':TextureStage.MCombine,
-            'MBlendColorScale':TextureStage.MBlendColorScale,
-            'MModulateGlow':TextureStage.MModulateGlow,
-            'MModulateGloss':TextureStage.MModulateGloss,
-            'MNormal':TextureStage.MNormal,
-            'MNormalHeight':TextureStage.MNormalHeight,
-            'MGlow':TextureStage.MGlow,
-            'MGloss':TextureStage.MGloss,
-            'MHeight':TextureStage.MHeight,
-            'MSelector':TextureStage.MSelector
-        }
+        def getRenderMapType(name):
+            return getattr(TextureStage,name)
         
-        combineModeTypeConverter={
-            'CMUndefined':TextureStage.CMUndefined,
-            'CMReplace':TextureStage.CMReplace,
-            'CMModulate':TextureStage.CMModulate,
-            'CMAdd':TextureStage.CMAdd,
-            'CMAddSigned':TextureStage.CMAddSigned,
-            'CMInterpolate':TextureStage.CMInterpolate,
-            'CMSubtract':TextureStage.CMSubtract,
-            'CMDot3Rgb':TextureStage.CMDot3Rgb,
-            'CMDot3Rgba':TextureStage.CMDot3Rgba,
-            
-            'CSUndefined':TextureStage.CSUndefined,
-            'CSTexture':TextureStage.CSTexture,
-            'CSConstant':TextureStage.CSConstant,
-            'CSPrimaryColor':TextureStage.CSPrimaryColor,
-            'CSPrevious':TextureStage.CSPrevious,
-            'CSConstantColorScale':TextureStage.CSConstantColorScale,
-            'CSLastSavedResult':TextureStage.CSLastSavedResult,
-            
-            'COUndefined':TextureStage.COUndefined,
-            'COSrcColor':TextureStage.COSrcColor,
-            'COOneMinusSrcColor':TextureStage.COOneMinusSrcColor,
-            'COSrcAlpha':TextureStage.COSrcAlpha,
-            'COOneMinusSrcAlpha':TextureStage.COOneMinusSrcAlpha,  
-        }
+        def getCombineMode(name):
+            return getattr(TextureStage,name)
         
         self.mapTexStages={}
         self.specialMaps={}
@@ -81,7 +41,7 @@ class RenderNode(NodePath):
             sort=0;
             for m in d["Tex2D"]:
                 sort+=1
-                s=bakery.whiteSpaceSplit(m)
+                s=m.split()
                 name=s[0]
                 texStage=TextureStage(name+'stage'+str(sort))
                 texStage.setSort(sort)
@@ -91,9 +51,9 @@ class RenderNode(NodePath):
                     combineMode=[]
                     for t in modeText:
                         if t[:1]=='M':
-                            texStage.setMode(renderMapTypesConverter[t])
+                            texStage.setMode(getRenderMapType(t))
                         elif t[:1]=='C':
-                            combineMode.append(combineModeTypeConverter[t])
+                            combineMode.append(getCombineMode(t))
                         elif t=='Save':
                             texStage.setSavedResult(True)
                         else:
@@ -107,7 +67,7 @@ class RenderNode(NodePath):
                     
                     setTexModes(s[3:])
                     
-                    self.terrainNode.setTexture(texStage,bakery.loadTex(path+"/textures/"+name))
+                    self.terrainNode.setTexture(texStage,loadTex(path+"/textures/"+name))
                     self.texList.append((texStage,float(s[2])))
                     
                 elif source=='map':
@@ -154,13 +114,10 @@ class RenderAutoTiler(RenderNode):
         self.removeThreshold=removeThreshold
         self.focus=focus
         
-        
         self.currentGenTile=None
         
         # Add a task to keep updating the terrain
         taskMgr.add(self.updateTiles, "updateTiles")
-        
-        
         
     def updateTiles(self,task):
         
@@ -169,8 +126,7 @@ class RenderAutoTiler(RenderNode):
         # This is offset as if the tile origin was in their center!
         # Its also scaled so the current tiles are size 1
         camTilePos=(self.focus.getPos(self))/self.tileScale-Vec3(0.5, 0.5, 0.0)
-        
-        
+
         
         # Figure out which tiles are needed
         # This is done by looping by nearby tiles positions, and checking their distances
@@ -194,18 +150,15 @@ class RenderAutoTiler(RenderNode):
         # Go through existing tiles
         # Remove them from needTiles as they are already generated
         # Collect any tiles too far away to keep in toRemove so they can be removed later
-        toRemove=[]
+
         tiles=self.getTiles()
+        # Remove distant tiles and remove existing tiles from needTiles
         for t in tiles:
-            #needTiles.discard((int(t.getX()/self.tileScale),int(t.getY()/self.tileScale)))
-            if t.tileLoc in needTiles: del needTiles[t.tileLoc]
-            d=(camTilePos-(t.getPos()/self.tileScale)).length()
-            if d>self.removeThreshold:
-                toRemove.append(t)
-        
-        # Remove distant tiles
-        for t in toRemove:
-            self.removeTile(t)
+            if t.tileLoc in needTiles:
+                del needTiles[t.tileLoc]
+            dist=(camTilePos-(t.getPos()/self.tileScale)).length()
+            if dist>self.removeThreshold:
+                self.removeTile(t)
         
         # Add a tile if appropriate
         if self.currentGenTile is None:
