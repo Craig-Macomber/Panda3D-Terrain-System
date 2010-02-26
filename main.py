@@ -29,7 +29,7 @@ This is a test of the terrain system.
 b=LiveBakery(None,"bakery2")
 
 
-tileSize=.05
+tileSize=.01
 terrainScale=100
 
 focuse=NodePath("tilerFocuse")
@@ -131,7 +131,7 @@ alnp = render.attachNewNode(alight)
 render.setLight(alnp)
 
 
-dayCycle=dlnp.hprInterval(10.0,Point3(0,360,0))
+dayCycle=dlnp.hprInterval(20.0,Point3(0,360,0))
 dayCycle.loop()
 
 
@@ -161,10 +161,33 @@ def addTitle(text):
 #A simple function to make sure a value is in a given range, -1 to 1 by default
 def restrain(i, mn = -1, mx = 1): return min(max(i, mn), mx)
 
-class World(DirectObject):
 
+class keyTracker(DirectObject):
+    """
+    Class for tracking the state of keys. keyMap holds if a key is down
+    Multiple keys can map to one name, though the value will be set to false when the first is relased
+    """
     def __init__(self):
         DirectObject.__init__(self)
+        self.keyMap = {}
+        
+    def setKey(self, key, value):
+        """Records the state of key"""
+        self.keyMap[key] = value
+    
+    def addKey(self,key,name,allowShift=True):
+        self.accept(key, self.setKey, [name,True])
+        self.accept(key+"-up", self.setKey, [name,False])  
+        self.accept(key.upper()+"-up", self.setKey, [name,False])
+        
+        if allowShift:
+            self.addKey("shift-"+key,name,False)
+        
+        self.keyMap[name]=0
+
+class World(keyTracker):
+    def __init__(self):
+        keyTracker.__init__(self)
         
         base.win.setClearColor(Vec4(0,0,0,1))
 
@@ -182,8 +205,7 @@ class World(DirectObject):
         # Create the main character, Ralph
 
         ralphStartPos = Vec3(0,0,0)
-        self.ralph = Actor("models/ralph",
-                                 {"run":"models/ralph-run"})
+        self.ralph = Actor("models/ralph",{"run":"models/ralph-run"})
         self.ralph.reparentTo(render)
         self.ralph.setScale(.02)
         self.ralph.setPos(ralphStartPos)
@@ -243,21 +265,6 @@ class World(DirectObject):
         base.camera.reparentTo(self.ralph)
         self.camDist=100.0
         
-    
-    def setKey(self, key, value):
-        """Records the state of key"""
-        self.keyMap[key] = value
-    
-    def addKey(self,key,name,allowShift=True):
-        self.accept(key, self.setKey, [name,True])
-        self.accept(key+"-up", self.setKey, [name,False])  
-        self.accept(key.upper()+"-up", self.setKey, [name,False])
-        
-        if allowShift:
-            self.addKey("shift-"+key,name,False)
-        
-        self.keyMap[name]=0
-
     def move(self, task):
 
         # Get the time elapsed since last frame. We need this
