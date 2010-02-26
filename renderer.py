@@ -11,7 +11,7 @@ class RenderNode(NodePath):
     def __init__(self,path):
         NodePath.__init__(self,path+"_render")
         
-        self.heightScale=.125
+        self.heightScale=.25
         
         d=parseFile(path+'/texList.txt')
         
@@ -126,7 +126,7 @@ class RenderAutoTiler(RenderNode):
         # This is offset as if the tile origin was in their center!
         # Its also scaled so the current tiles are size 1
         camTilePos=(self.focus.getPos(self))/self.tileScale-Vec3(0.5, 0.5, 0.0)
-
+        camTilePos.setZ(0)
         
         # Figure out which tiles are needed
         # This is done by looping by nearby tiles positions, and checking their distances
@@ -263,6 +263,7 @@ class RenderTile(NodePath):
         heightTex=bakedTile.renderMaps[node.specialMaps["height"]].tex
         heightTexSize=heightTex.getXSize()
         pnmImage=PNMImage()
+        # heightTex.makeRamImage () # Makes it run without having ran image in advance, but it all ends up flat.
         heightTex.store(pnmImage)
         self.terrain.setHeightfield(pnmImage)
         
