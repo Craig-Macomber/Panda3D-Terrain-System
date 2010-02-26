@@ -8,12 +8,12 @@ smoothNoise
 :Shader
 float v=0;
 float scaler=2.1;
-float startScale=.04;
-float persistance=.5;
+float startScale=.08;
+float persistance=.48;
 float totalScale=0;
 
 float multNoiseScale=1/2.725;
-float roughnessScaler=.9;
+float roughnessScaler=.8;
 int i;
 for (i = 1; i <= 8; i++){
   float s=tex2D(tex2D_smoothNoise,pos*startScale*pow(scaler,i)).x*2-1;
@@ -27,19 +27,6 @@ for (i = 1; i <= 8; i++){
 
 v=v/totalScale;
 
-float h=v*1+.1;
-float4 c=float4(h);
-//h=h*256;
-//int r=floor(h);
-//h=h-r;
-//h=h*256;
-//int g=floor(h);
-//h=h-g;
-////h=h*256;
-//float b=h;
-//float4 c=float4(r/256.0,g/256.0,b,1);
+float h=v*.9+.1;
 
-//float4 c=pack_4byte(h);
-
-c.w=1;
-return c;
+return float4(packFloat(h),1);

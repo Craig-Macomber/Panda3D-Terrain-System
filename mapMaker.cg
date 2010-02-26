@@ -14,6 +14,16 @@ void vshader(
     l_tex=vtx_position.xz;
 }
 
+float3 packFloat(float h){
+int3 hv=int3(clamp(h,0,1)*float3(256,256*256,256*256*256));
+hv.yz%=256;
+return float3(hv)/256;
+}
+
+float unpackFloat(float3 h){
+return h.x+h.y/256+h.z/(256*256);
+}
+
 float4 shade(float2 pos#paramsDef#){
 
 #source#
