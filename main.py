@@ -29,19 +29,20 @@ This is a test of the terrain system.
 b=LiveBakery(None,"bakery2")
 
 
-tileSize=.01
+tileSize=.1
 terrainScale=100
 
-focuse=NodePath("tilerFocuse")
+focus=NodePath("tilerFocuse")
 
 
 # Make the main (highest LOD) tiler
-n=RenderAutoTiler('render',b,tileSize,focuse,3.0,4.0)
+#n=RenderAutoTiler('render',b,tileSize,focus,3.0,4.0)
+n=GeoClipMapper('render',b,.1,focus)
 n.reparentTo(render)
 n.setScale(terrainScale)
 
-useLowLOD=True
-useMidLOD=True
+useLowLOD=False
+useMidLOD=False
 
 
 
@@ -144,8 +145,9 @@ filterok = filters.setBloom(blend=(0,0,0,1), desat=0.5, intensity=2.5, size="sma
 # Init camera
 base.disableMouse()
 camLens=base.camLens
-camLens.setNear(.1)
-
+camLens.setNear(1)
+camLens.setFar(200000)
+base.cam.node().setLens(camLens)
 
 font = TextNode.getDefaultFont()
 
@@ -211,7 +213,7 @@ class World(keyTracker):
         self.ralph.setPos(ralphStartPos)
         self.ralph.setShaderAuto()
         
-        focuse.reparentTo(self.ralph)
+        focus.reparentTo(self.ralph)
         
         #Now we use controlJoint to get a NodePath that's in control of his neck
         #This must be done before any animations are played
@@ -276,7 +278,7 @@ class World(keyTracker):
         
         #zoomOut=self.keyMap["zoomOut"]-self.keyMap["zoomIn"]
         zoomOut=self.keyMap["zoom"]
-        self.camDist=max(min(1200,self.camDist+zoomOut*elapsed*50),30)
+        self.camDist=max(min(60000,self.camDist+zoomOut*elapsed*50+zoomOut*self.camDist*elapsed*.5),30)
         #print zoomOut
         
         self.ralph.setH(self.ralph.getH() - elapsed*100*turnRightAmount)

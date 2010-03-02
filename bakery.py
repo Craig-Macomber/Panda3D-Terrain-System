@@ -16,7 +16,7 @@ qq=Queue()
 
 
 # Size Map textures are rendered
-tileMapSize=64
+tileMapSize=256
 
 # Makes debugging shaders easier
 useShaderFiles=False

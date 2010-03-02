@@ -1,6 +1,6 @@
 :Settings
-resolutionScale .5
-addPixels 1
+#resolutionScale .5
+#addPixels 1
 
 :Input
 baseHeight

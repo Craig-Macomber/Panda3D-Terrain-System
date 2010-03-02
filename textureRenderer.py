@@ -1,7 +1,7 @@
 from panda3d.core import Texture
 from panda3d.core import GraphicsOutput
 from direct.task.Task import Task
-
+from panda3d.core import FrameBufferProperties
 """
 
 This is intended to serve is a queueing system for one shot rendering to textures.
@@ -81,6 +81,7 @@ class Queue:
         elif self.renderFrame>0:
             # Should be rendered by now. Could potentially add extra wait here.
             tex = self.currentBuff.getTexture()
+            #print tex.getFormat()
             self.currentBuff.setActive(False)
             self.displayRegions[self.currentBuff].setActive(False)
             self.currentBuff.clearRenderTextures()
@@ -105,6 +106,11 @@ class Queue:
             buff=self.buffs[size]
         else:
             mainWindow=base.win
+            fbp=FrameBufferProperties(mainWindow.getFbProperties())
+            #print fbp.getColorBits()
+            fbp.setColorBits(24*2)
+            fbp.setDepthBits(0)
+            fbp.setAlphaBits(0)
             buff=mainWindow.makeTextureBuffer('QueueBuff'+str(size),width,height,Texture(),True)
             dr=buff.makeDisplayRegion(0, 1, 0, 1)
             self.buffs[size]=buff

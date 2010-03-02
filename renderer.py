@@ -1,17 +1,30 @@
 from direct.showbase.ShowBase import ShowBase
 import direct.directbase.DirectStart
-from panda3d.core import GeoMipTerrain, NodePath, TextureStage, Vec3, PNMImage
+from pandac.PandaModules import *
+#from panda3d.core import GeoMipTerrain, NodePath, TextureStage, Vec3, PNMImage
 
 from bakery import Tile, parseFile, loadTex
 from math import ceil
 
+"""
+Planned Renderers
+RenderNode - Basic Tile Renderer
+RenderAutoTiler(RenderNode) - Fetches tiles near a ficuse from a tile source and renders them
+GeoClipMapper - 
+
+"""
+
+
+
+
+
 useBruteForce=True
 
 class RenderNode(NodePath):
-    def __init__(self,path):
+    def __init__(self,path,terrainNode):
         NodePath.__init__(self,path+"_render")
         
-        self.heightScale=.25
+        self.heightScale=.125
         
         d=parseFile(path+'/texList.txt')
         
@@ -28,7 +41,7 @@ class RenderNode(NodePath):
             self.specialMaps[s[1]]=s[0]
         
         # terrainNode holds all the terrain tiles
-        self.terrainNode=NodePath(path+"_terrainNode")
+        self.terrainNode=terrainNode
         self.terrainNode.reparentTo(self)
         #self.terrainNode.setShader(loader.loadShader(path+"/render.sha"))
         self.terrainNode.setShaderAuto()
@@ -77,6 +90,207 @@ class RenderNode(NodePath):
                 else:
                     print 'Invalid source for '+name+' int Tex2D'
 
+class GeoClipMapper(RenderNode):
+    def __init__(self,path,tileSource,minScale,focus):
+        RenderNode.__init__(self,path,NodePath(path+"_terrainNode"))
+        
+        self.heightMapRez=256##########Gonna need to compute/get this somehow!
+        self.setShaderInput("heightMapRez",self.heightMapRez,0,0,0)
+        
+        self.focus=focus
+        self.minScale=minScale
+        self.tileSource=tileSource
+        self.heightStage=TextureStage("height")
+        
+        
+        rezFactor=32
+        n=rezFactor*4-1
+        self.rez=n
+        m=(n+1)/4
+        
+        self.baseTileScale=minScale/n*self.heightMapRez
+        
+        def makeGrid(xSize,ySize):
+            """ Size is in verts, not squares """
+            
+            format=GeomVertexFormat.getV3()
+            vdata=GeomVertexData('grid', format, Geom.UHStatic)
+            vertex=GeomVertexWriter(vdata, 'vertex')
+            grid=Geom(vdata)
+            snode=GeomNode('grid')
+            
+            for x in xrange(xSize):
+                for y in xrange(ySize):
+                    vertex.addData3f(x,y,0)
+            
+            tri=GeomTristrips(Geom.UHStatic)
+            def index(lx,ly):
+                return ly+lx*(ySize)
+                
+            for x in xrange(xSize-1):
+                for y in xrange(ySize):
+                    tri.addVertex(index(x,y))
+                    tri.addVertex(index(x+1,y))
+                tri.closePrimitive()
+        
+            grid.addPrimitive(tri)
+            
+            snode.addGeom(grid)
+            return snode
+        
+        
+        
+        
+        nxn=makeGrid(n,n)
+        mxm=makeGrid(m,m)
+        mx3=makeGrid(m,3)
+        x3xm=makeGrid(3,m)
+        m2x2=makeGrid(2*m+1,2)
+
+        
+        center=_GeoClipLevel(0,self)
+        NodePath(nxn).copyTo(center).setPos(-n/2,-n/2,0)
+        center.reparentTo(self.terrainNode)
+        
+        halfOffset=n/2
+        
+        ring=NodePath("Ring")
+        def doCorner(x,y):
+            xd=x*n/2-(x+1)*m/2
+            yd=y*n/2-(y+1)*m/2
+            NodePath(mxm).copyTo(ring).setPos(xd,yd,0)
+            NodePath(mxm).copyTo(ring).setPos(xd,yd-y*(m-1),0)
+            NodePath(mxm).copyTo(ring).setPos(xd-x*(m-1),yd,0)
+            if x==-1:
+                if y==1:
+                    NodePath(mx3).copyTo(ring).setPos(xd,yd-y*(m+1),0)
+                else:
+                    xd2=n/2-m
+                    NodePath(mx3).copyTo(ring).setPos(xd2,yd+2*m-2,0)
+            else:
+                NodePath(x3xm).copyTo(ring).setPos(xd-x*(m+1),yd,0)
+        
+        doCorner(-1,-1)
+        doCorner(1,-1)
+        doCorner(-1,1)
+        doCorner(1,1)
+        
+        ringCount=7
+        
+        self.levels=[center]
+        for i in xrange(ringCount):
+            r=_GeoClipLevel(i+1,self)
+            r.reparentTo(self.terrainNode)
+            for c in ring.getChildren():
+                c.copyTo(r)
+            
+            self.levels.append(r)
+        
+        
+        scale=minScale/(n-1)
+        self.terrainNode.setScale(scale,scale,self.heightScale)
+        self.terrainNode.setShader(loader.loadShader("geoClip.sha"))
+        
+        for r in self.levels:
+            for node in r.getChildren():
+                node.setShaderInput("offset",node.getX()+halfOffset,node.getY()+halfOffset,0,0)
+        
+        self.terrainNode.setShaderInput("n",n,0,0,0)
+        # Add a task to keep updating the terrain
+        taskMgr.add(self.update, "update")
+        
+        
+    def update(self,task):
+        for i in xrange(len(self.levels),0,-1):
+            self.levels[i-1].update(self.levels[i] if i<len(self.levels) else None)
+        return task.cont
+        
+        
+    def height(self,x,y): return 0        
+        
+class _GeoClipLevel(NodePath):
+    def __init__(self,level,geoClipMapper):
+        """
+        level starts at 0 in center
+        scale is 2**level
+        """
+        NodePath.__init__(self,"GeoClipLevel_"+str(level))
+        self.level=level
+        self.geoClipMapper=geoClipMapper
+        
+        self.heightTex=loadTex("render/textures/grass")#Texture()
+        self.setTexture(geoClipMapper.heightStage,self.heightTex)
+        
+        scale=2**(level)
+        self.setScale(scale,scale,1)
+        
+        self.lastTile=None
+        
+        self.tileScale=geoClipMapper.baseTileScale*scale
+        
+        self.makingTile=False
+        
+        self.setShaderInput("tileOffset",0,0,0,0)
+        
+    def update(self,bigger):
+        """ bigger is next larger _GeoClipLevel, or None is self is biggest """
+        
+        # Place me!
+        s=int(self.getScale().getX())*2
+        fx=self.geoClipMapper.focus.getX(self.geoClipMapper.terrainNode)
+        fy=self.geoClipMapper.focus.getY(self.geoClipMapper.terrainNode)
+        x=int(fx)/s+1
+        y=int(fy)/s+1
+        self.setPos(x*s,y*s,0)
+        
+        # Tex Offset
+        #node.setShaderInput("texOffset",node.getX()+halfOffset,node.getY()+halfOffset,0,0)
+
+        
+        if self.lastTile is not None:
+            # get dist from center of self.lastTile to focuse
+            tx=(self.lastTile.x+self.tileScale/2.0)/self.geoClipMapper.terrainNode.getSx()
+            ty=(self.lastTile.y+self.tileScale/2.0)/self.geoClipMapper.terrainNode.getSy()
+            dx=self.getX()-tx
+            dy=self.getY()-ty
+            
+            # convert dx and dy to current level scale
+            dx/=self.getSx()
+            dy/=self.getSy()
+            
+            
+            # get margin in px between current tile edge and level edge
+            s=self.geoClipMapper.heightMapRez
+            
+            mx=s/2-abs(dx)-self.geoClipMapper.rez/2
+            my=s/2-abs(dy)-self.geoClipMapper.rez/2
+            
+            ox=dx-self.geoClipMapper.rez/2+s/2
+            oy=dy-self.geoClipMapper.rez/2+s/2
+            self.setShaderInput("tileOffset",ox,oy,0,0)
+            
+            
+            m=min(mx,my)
+                
+
+        if (not self.makingTile) and (self.lastTile is None or m<2):
+            self.makingTile=True
+            x=self.geoClipMapper.focus.getX(self.geoClipMapper)-self.tileScale/2
+            y=self.geoClipMapper.focus.getY(self.geoClipMapper)-self.tileScale/2
+            self.geoClipMapper.tileSource.asyncGetTile(x,y,self.tileScale,self.asyncTileDone)
+            
+    def asyncTileDone(self,tile):
+        self.lastTile=tile
+        print "Tile Level: "+str(self.level)
+        self.makingTile=False
+        tex=self.lastTile.renderMaps[self.geoClipMapper.specialMaps['height']].tex
+        tex.setMinfilter(Texture.FTNearest)
+        tex.setMagfilter(Texture.FTNearest)
+        self.setTexture(self.geoClipMapper.heightStage,tex)
+    
+class RenderTiler(RenderNode):
+    def __init__(self,path):
+        RenderNode.__init__(self,path,NodePath(path+"_terrainNode"))
         
         # Add a task to keep updating the terrain
         taskMgr.add(self.updateTask, "update")
@@ -102,11 +316,10 @@ class RenderNode(NodePath):
     
     def removeTile(self, renderTile):
         renderTile.removeNode()
-        
-        
-class RenderAutoTiler(RenderNode):
+
+class RenderAutoTiler(RenderTiler):
     def __init__(self,path,tileSource,tileScale,focus,addThreshold=1.0,removeThreshold=1.8,):
-        RenderNode.__init__(self,path)        
+        RenderTiler.__init__(self,path)        
         self.tileSource=tileSource
         self.tileScale=tileScale
         self.tilesMade=0
