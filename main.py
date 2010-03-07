@@ -18,12 +18,7 @@ from renderer import *
 print PandaSystem.getVersionString()
 backBinName="background"
 
-"""
-
-This is a test of the terrain system.
-
-
-"""
+"""This is a test/demo of the terrain system."""
 
 # Create a bakery that uses the "bakery2" folder for its resources
 b=LiveBakery(None,"bakery2")
@@ -35,47 +30,60 @@ terrainScale=100
 focus=NodePath("tilerFocuse")
 
 
-# Make the main (highest LOD) tiler
-#n=RenderAutoTiler('render',b,tileSize,focus,3.0,4.0)
-n=GeoClipMapper('render',b,.1,focus)
-n.reparentTo(render)
-n.setScale(terrainScale)
-
 useLowLOD=False
 useMidLOD=False
 
+renderer=RenderAutoTiler
 
-
-# Setup a card maker for depth reset cards for between LOD draws
-cm=CardMaker("depthwiper")
-cm.setFrameFullscreenQuad()
-
-# Make node to hold depth reset cards
-dist=100000
-clearCardHolder=NodePath('clearCardHolder')
-clearCardHolder.reparentTo(base.camera)
-clearCardHolder.setDepthTest(False)
-
-clearCardHolder.setY(dist)
-clearCardHolder.setScale(dist)
-clearCardHolder.setAttrib(DepthTestAttrib.make(RenderAttrib.MAlways))
-clearCardHolder.setAttrib(ColorWriteAttrib.make(ColorWriteAttrib.MNone))
-
-def addTerrainLOD(sort,scale,addDist,removeDist):
-    bg=RenderAutoTiler('render',b,tileSize*scale,focuse,addDist,removeDist)
-    bg.reparentTo(render)
-    bg.setBin(backBinName,sort)
-    bg.setScale(terrainScale)
+if renderer is GeoClipMapper:
+    n=GeoClipMapper('render',b,.1,focus)
+else:
+    #Make the main (highest LOD) tiler
+    n=RenderAutoTiler('render',b,tileSize,focus,3.0,4.0)
+    useLowLOD=True
+    useMidLOD=True
     
-    c=NodePath(cm.generate())
-    c.reparentTo(clearCardHolder)
-    c.setBin(backBinName,sort+1)
     
-    return bg
+    # Setup a card maker for depth reset cards for between LOD draws
+    cm=CardMaker("depthwiper")
+    cm.setFrameFullscreenQuad()
+    
+    # Make node to hold depth reset cards
+    dist=100000
+    clearCardHolder=NodePath('clearCardHolder')
+    clearCardHolder.reparentTo(base.camera)
+    clearCardHolder.setDepthTest(False)
+    
+    clearCardHolder.setY(dist)
+    clearCardHolder.setScale(dist)
+    clearCardHolder.setAttrib(DepthTestAttrib.make(RenderAttrib.MAlways))
+    clearCardHolder.setAttrib(ColorWriteAttrib.make(ColorWriteAttrib.MNone))
+    
+    def addTerrainLOD(sort,scale,addDist,removeDist):
+        bg=RenderAutoTiler('render',b,tileSize*scale,focus,addDist,removeDist)
+        bg.reparentTo(render)
+        bg.setBin(backBinName,sort)
+        bg.setScale(terrainScale)
+        
+        c=NodePath(cm.generate())
+        c.reparentTo(clearCardHolder)
+        c.setBin(backBinName,sort+1)
+        
+        return bg
+    
+    # Make the background LOD tilers. This causes lots of over draw
+    if useMidLOD: bg1=addTerrainLOD(10,4,1.7,2.0)
+    if useLowLOD: bg2=addTerrainLOD(0,16,1.3,1.4)
 
-# Make the background LOD tilers. This causes lots of over draw
-if useMidLOD: bg1=addTerrainLOD(10,4,1.7,2.0)
-if useLowLOD: bg2=addTerrainLOD(0,16,1.3,1.4)
+    
+    
+n.reparentTo(render)
+n.setScale(terrainScale)
+
+
+
+
+
 
 
 # Make a little UI input handeling class

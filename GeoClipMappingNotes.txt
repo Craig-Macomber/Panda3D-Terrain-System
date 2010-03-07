@@ -1,0 +1,19 @@
+Geoclipmapping:
+
+http://research.microsoft.com/en-us/um/people/hoppe/geomclipmap.pdf
+http://research.microsoft.com/en-us/um/people/hoppe/proj/gpugcm/
+
+
+http://http.developer.nvidia.com/GPUGems2/gpugems2_chapter02.html
+
+Tile Source (Live bakery):
+Provides tiles as asked
+Tile Cash (Also a tile source, but takes another tile source on init):
+Keeps requested tiles around, and fetches tiles as needed from tile source
+Map merger:
+Combines/aligns tiles via render to texture to create textures (including height maps) for renderer.
+Makes sure tile cash has/will have needed tiles.
+When needed, temparalilly uses lower rez versions until higher rez is ready
+Renderer:
+Keeps position/direction (move and view) info in map merger up to date so it can render the proper maps
+Displays geom

@@ -1,22 +1,10 @@
 from panda3d.core import *
-from direct.showbase.ShowBase import ShowBase
-import direct.directbase.DirectStart
-
-from direct.task import Task
-
-from direct.stdpy.threading import Condition
-
-
-
 from textureRenderer import *
-
-
 
 qq=Queue()
 
-
 # Size Map textures are rendered
-tileMapSize=256
+tileMapSize=64
 
 # Makes debugging shaders easier
 useShaderFiles=False
@@ -59,8 +47,6 @@ def parseFile(path):
                 if currentList!=None:
                     currentList.append(t)
     return d
-
-
 
 
 mapMakerShaderSource=open(pathPrefix()+'mapMaker.cg', 'r').read()
@@ -222,7 +208,7 @@ class Bakery:
         return altCam
         
     def asyncRenderMap(self, rawTile, inputMaps, shader, callback, callbackParams=()):
-        size=int(round(tileMapSize*shader.resolutionScale+shader.addPixels))
+        size=shader.getRez(tileMapSize)
         
         q=QueueItem(size,size,self._asyncRenderMapDone,self.getRenderMapCam, (callback,shader.name,callbackParams), (rawTile, inputMaps, shader, size),toRam=False)
         qq.queue.append(q)
@@ -242,7 +228,7 @@ class Bakery:
         """
         
         # Resolution of texture/buffer to be rendered
-        size=int(round(tileMapSize*shader.resolutionScale+shader.addPixels))
+        size=shader.getRez(tileMapSize)
         
         
         altCam=self.getRenderMapCam(rawTile, inputMaps, shader, size)
@@ -443,6 +429,9 @@ class MapShader:
                     self.resolutionScale=float(v)
                 elif m=='addPixels':
                     self.addPixels=int(v)
+    def getRez(self,baseRez):
+        return int(round(baseRez*self.resolutionScale+self.addPixels))
+        
         
 def loadTex(path):
     extensions=['png','jpg']

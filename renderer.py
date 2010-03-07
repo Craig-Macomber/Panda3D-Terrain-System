@@ -3,7 +3,7 @@ import direct.directbase.DirectStart
 from pandac.PandaModules import *
 #from panda3d.core import GeoMipTerrain, NodePath, TextureStage, Vec3, PNMImage
 
-from bakery import Tile, parseFile, loadTex
+from bakery import Tile, parseFile, loadTex, tileMapSize
 from math import ceil
 
 """
@@ -94,7 +94,16 @@ class GeoClipMapper(RenderNode):
     def __init__(self,path,tileSource,minScale,focus):
         RenderNode.__init__(self,path,NodePath(path+"_terrainNode"))
         
-        self.heightMapRez=256##########Gonna need to compute/get this somehow!
+        #self.heightMapRez=256##########Gonna need to compute/get this somehow!
+        heightMapName=self.specialMaps['height']
+        self.heightMapRez=0
+        for s in tileSource.shaders:
+            if s.name==heightMapName:
+                self.heightMapRez=s.getRez(tileMapSize)
+                break
+        
+        if self.heightMapRez==0: print 'Failed to determain height map resolution'
+        
         self.setShaderInput("heightMapRez",self.heightMapRez,0,0,0)
         
         self.focus=focus
@@ -102,9 +111,12 @@ class GeoClipMapper(RenderNode):
         self.tileSource=tileSource
         self.heightStage=TextureStage("height")
         
-        
-        rezFactor=32
+        rezFactor=10
         n=rezFactor*4-1
+        
+        if n+4>=self.heightMapRez:
+            print 'Error: Can not have geoClipMap rez higher than height map rez'
+        
         self.rez=n
         m=(n+1)/4
         
