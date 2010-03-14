@@ -149,7 +149,6 @@ filters = CommonFilters(base.win, base.cam)
 filterok = filters.setBloom(blend=(0,0,0,1), desat=0.5, intensity=2.5, size="small",mintrigger=0.0, maxtrigger=1.0)
 
 
-
 # Init camera
 base.disableMouse()
 camLens=base.camLens
@@ -193,7 +192,7 @@ class keyTracker(DirectObject):
         if allowShift:
             self.addKey("shift-"+key,name,False)
         
-        self.keyMap[name]=0
+        self.keyMap[name]=False
 
 class World(keyTracker):
     def __init__(self):
@@ -205,7 +204,7 @@ class World(keyTracker):
 
         self.title = addTitle("Infinite Ralph")
         self.inst1 = addInstructions(0.95, "[ESC]: Quit")
-        self.inst2 = addInstructions(0.90, "WASD + Arrow Keys")
+        self.inst2 = addInstructions(0.90, "WASD + Mouse (Or arrow Keys)")
         self.inst3 = addInstructions(0.85, "Shift for hyper")
         self.inst3 = addInstructions(0.80, "X for analyze")
         self.inst3 = addInstructions(0.75, "C tints mid LOD")
@@ -222,10 +221,6 @@ class World(keyTracker):
         self.ralph.setShaderAuto()
         
         focus.reparentTo(self.ralph)
-        
-        #Now we use controlJoint to get a NodePath that's in control of his neck
-        #This must be done before any animations are played
-        #self.neck = self.ralph.controlJoint(None, 'modelRoot', 'Neck')
 
         # Create a floater object.  We use the "floater" as a temporary
         # variable in a variety of calculations.
@@ -237,7 +232,6 @@ class World(keyTracker):
         
         self.accept("escape", exit)
 
-        self.keyMap = {}
         
         self.addKey("w","forward")
         self.addKey("a","left")
@@ -266,14 +260,9 @@ class World(keyTracker):
         base.disableMouse()
         base.camera.setH(180)
         
-        #self.ralph.enableBlend()
-        #self.ralph.setControlEffect("run",1)
-        #self.ralph.setControlEffect("walk",0)
-        #print self.ralph.listJoints()
-        #print self.ralph.getAnimNames()
-        
         base.camera.reparentTo(self.ralph)
         self.camDist=100.0
+        
         
     def move(self, task):
 
@@ -281,20 +270,37 @@ class World(keyTracker):
         # for framerate-independent movement.
         elapsed = globalClock.getDt()
         
+
         turnRightAmount=self.keyMap["turnRight"]-self.keyMap["turnLeft"]
         turnUpAmmount=self.keyMap["turnUp"]-self.keyMap["turnDown"]
         
-        #zoomOut=self.keyMap["zoomOut"]-self.keyMap["zoomIn"]
+        turnRightAmount*=elapsed*100
+        turnUpAmmount*=elapsed*100
+        
+        # Use mouse input to turn both Ralph and the Camera 
+        if base.mouseWatcherNode.hasMouse(): 
+            # get changes in mouse position 
+            md = base.win.getPointer(0) 
+            x = md.getX() 
+            y = md.getY() 
+            deltaX = md.getX() - 200 
+            deltaY = md.getY() - 200 
+            # reset mouse cursor position 
+            base.win.movePointer(0, 200, 200) 
+            
+            turnRightAmount+=0.2* deltaX
+            turnUpAmmount-= 0.2 * deltaY 
+            
         zoomOut=self.keyMap["zoom"]
         self.camDist=max(min(60000,self.camDist+zoomOut*elapsed*50+zoomOut*self.camDist*elapsed*.5),30)
-        #print zoomOut
+        self.keyMap["zoom"]*=2.7**(-elapsed*4)# Smooth fade out of zoom speed
         
-        self.ralph.setH(self.ralph.getH() - elapsed*100*turnRightAmount)
-        base.camera.setP(base.camera.getP() + elapsed*100*turnUpAmmount)
+        
+        self.ralph.setH(self.ralph.getH() - turnRightAmount)
+        base.camera.setP(base.camera.getP() + turnUpAmmount)
         
         # save ralph's initial position so that we can restore it,
         # in case he falls off the map or runs into something.
-
         startpos = self.ralph.getPos()
 
         # If a move-key is pressed, move ralph in the specified direction.
@@ -305,6 +311,7 @@ class World(keyTracker):
         # Slow forward when moving diagonal
         forwardMove*=1.0-abs(rightMove)
         
+        # Hyper mode. Prabably just for debug
         speed=1+9*self.keyMap["hyper"]
 
         rightMove*=speed
@@ -323,7 +330,6 @@ class World(keyTracker):
         
         # If ralph is moving, loop the run animation.
         # If he is standing still, stop the animation.
-        
         if rightMove or forwardMove:
             self.ralph.setPlayRate(forwardMove+abs(rightMove)*sign(forwardMove), 'run')
             if self.isMoving is False:
