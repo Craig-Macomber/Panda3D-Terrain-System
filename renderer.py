@@ -111,7 +111,7 @@ class GeoClipMapper(RenderNode):
         self.tileSource=tileSource
         self.heightStage=TextureStage("height")
         
-        rezFactor=10
+        rezFactor=80
         n=rezFactor*4-1
         
         if n+4>=self.heightMapRez:
@@ -187,7 +187,7 @@ class GeoClipMapper(RenderNode):
         doCorner(-1,1)
         doCorner(1,1)
         
-        ringCount=7
+        ringCount=4
         
         self.levels=[center]
         for i in xrange(ringCount):
@@ -212,7 +212,65 @@ class GeoClipMapper(RenderNode):
         taskMgr.add(self.update, "update")
         
         
+        self.grass=self.setUpGrass(center,n)
+        grassTex=loadTex("grassSheet")
+        self.grassStage=TextureStage("grassData")
+        self.grass.setTexture(self.grassStage,grassTex)
+        self.grassSheetStage=TextureStage("grassSheet")
+        self.grass.setTexture(self.grassSheetStage,grassTex)
+        
+        
+    def setUpGrass(self,node,rez):
+        # create a mesh thats a bunch of disconnected rectangles, 1 tall, 0.5 wide, at every grid point
+        format=GeomVertexFormat.getV3()
+        vdata=GeomVertexData('grid', format, Geom.UHStatic)
+        vertex=GeomVertexWriter(vdata, 'vertex')
+        grid=Geom(vdata)
+        snode=GeomNode('grid')
+        ofx=rez/2
+        ofy=rez/2
+        for x in xrange(rez):
+            for y in xrange(rez):
+                xp=x-ofx-.25-1
+                yp=y-ofy-1
+                vertex.addData3f(xp,yp,0)
+                vertex.addData3f(xp+.5,yp,0)
+                vertex.addData3f(xp,yp,1)
+                vertex.addData3f(xp+.5,yp,1)
+            
+        tri=GeomTristrips(Geom.UHStatic)
+        def index(lx,ly):
+            return (ly+lx*(rez))*4
+            
+        for x in xrange(rez):
+            for y in xrange(rez):
+                i=index(x,y)
+                tri.addVertex(i)
+                tri.addVertex(i+1)
+                
+                tri.addVertex(i+2)
+                tri.addVertex(i+3)
+                tri.closePrimitive()
+        grid.addPrimitive(tri)
+        snode.addGeom(grid)
+        grass=NodePath(snode)
+        grass.reparentTo(node)
+        grass.setAttrib(CullFaceAttrib.make(CullFaceAttrib.MCullNone))
+        grass.setShaderInput("offset",ofx,ofy,0,0)
+        grass.setShader(loader.loadShader("geoClipGrass.sha"))
+        
+        #grass.setTexture(self.grassStage,dataTex)
+        return grass
+        
     def update(self,task):
+        center=self.levels[0]
+        if center.lastTile:
+            pass
+            #print self.specialMaps['grassData']
+            #center.lastTile.saveMaps('pics/')
+            self.grass.setTexture(self.grassStage,center.lastTile.renderMaps[self.specialMaps['grassData']].tex)
+            #print 'x'
+            #print self.grass.findAllTextureStages()
         for i in xrange(len(self.levels),0,-1):
             self.levels[i-1].update(self.levels[i] if i<len(self.levels) else None)
         return task.cont
@@ -299,6 +357,7 @@ class _GeoClipLevel(NodePath):
         tex.setMinfilter(Texture.FTNearest)
         tex.setMagfilter(Texture.FTNearest)
         self.setTexture(self.geoClipMapper.heightStage,tex)
+        
     
 class RenderTiler(RenderNode):
     def __init__(self,path):

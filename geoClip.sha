@@ -1,0 +1,46 @@
+//Cg
+
+
+float unpackFloat(float3 h){
+return h.x+h.y/256+h.z/(256*256);
+}
+
+
+
+void vshader(
+    uniform float4x4 mat_modelproj,
+    in float4 vtx_position : POSITION,
+    uniform float4 k_offset,
+    uniform float4 k_tileOffset,
+    uniform float4 k_n,
+    uniform float4 k_heightMapRez,
+    out float2 l_uv: TEXCOORD0,
+    in uniform sampler2D tex_height: TEXUNIT0, 
+    out float l_height : TEXCOORD1,
+    out float4 l_position : POSITION)
+{
+    
+    float2 fGridPos=vtx_position.xy+k_offset.xy;
+    int2 gridPos=int2(fGridPos);
+    
+    float2 ftileGridPos=(fGridPos+k_tileOffset.xy);
+    
+    l_uv=(ftileGridPos+.5)/(k_heightMapRez.x);
+    
+    l_height=unpackFloat(tex2D(tex_height,l_uv).xyz);
+    l_position = mul(mat_modelproj, float4(vtx_position.xy,l_height,1));
+}
+
+
+void fshader( 
+  in float2 l_uv: TEXCOORD0,
+  uniform float4 k_n,
+  in float l_height : TEXCOORD1,
+  in uniform sampler2D tex_height: TEXUNIT0, 
+  out float4 o_color: COLOR) 
+{
+    //float2 uv=(l_pos//abs(round((l_pos))-(l_pos));///k_n.x;
+    //o_color=float4(l_uv,0,0);
+    o_color=float4(sin(l_height*500)/(l_height*100+.05),l_height,0,0);
+    //o_color=float4(tex2D(tex_height,l_uv).xyz,0);//float4(uv,0,0);
+} 

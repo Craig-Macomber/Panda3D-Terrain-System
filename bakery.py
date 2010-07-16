@@ -4,7 +4,7 @@ from textureRenderer import *
 qq=Queue()
 
 # Size Map textures are rendered
-tileMapSize=64
+tileMapSize=512
 
 # Makes debugging shaders easier
 useShaderFiles=False
@@ -339,7 +339,11 @@ class _RawTile:
         return self._tileFromMaps(bakery, maps)
  
 class Tile:
-    """Baked Tile"""
+    """
+    Baked Tile
+    renderMaps is dict (mapName:Map)
+    
+    """
     def __init__(self,renderMaps,placedMesh, x, y, scale):
         self.x=x
         self.y=y

@@ -1,0 +1,25 @@
+output maps file:
+specify relative resolutions
+    resolutionScale
+    addPixels
+
+specify pixelplacement mode
+    pixel centers on tile corners
+        kinda like margins .5 and addPixels -1
+    pixels fully within tile
+    margins (add extra pixels outside tile, like addPixels, but adds coverage area instead of higher resolution)
+        interger px added to all sides
+
+fixed pixel size in world space
+max/min pixel size in wrold space
+
+
+maps:
+sample modes:
+    exact 1:1
+        optional: offset px
+    filtered (filtermode)
+    
+sample settings:
+    alwayse cashed
+    never cashed  

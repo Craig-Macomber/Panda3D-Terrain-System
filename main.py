@@ -1,6 +1,8 @@
 from panda3d.core import *
 
 loadPrcFile("TerrainConfig.prc")
+loadPrcFileData("", "basic-shaders-only #f")
+
 
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.DirectObject import DirectObject
@@ -20,6 +22,16 @@ backBinName="background"
 
 """This is a test/demo of the terrain system."""
 
+
+#s=loader.loadModel('models/Scrub')
+#s.reparentTo(render)
+#s.setScale(.2)
+#s.setInstanceCount(20)
+#s.setShaderInput('id',0)
+#s.setShader(loader.loadShader('instanceTest.sha'))
+
+
+
 # Create a bakery that uses the "bakery2" folder for its resources
 b=LiveBakery(None,"bakery2")
 
@@ -33,10 +45,10 @@ focus=NodePath("tilerFocuse")
 useLowLOD=False
 useMidLOD=False
 
-renderer=RenderAutoTiler
+renderer=GeoClipMapper
 
 if renderer is GeoClipMapper:
-    n=GeoClipMapper('render',b,.1,focus)
+    n=GeoClipMapper('render',b,.02,focus)
 else:
     #Make the main (highest LOD) tiler
     n=RenderAutoTiler('render',b,tileSize,focus,3.0,4.0)
@@ -141,7 +153,7 @@ render.setLight(alnp)
 
 
 dayCycle=dlnp.hprInterval(20.0,Point3(0,360,0))
-dayCycle.loop()
+#dayCycle.loop()
 
 
 # Filter to display the glow map's glow via bloom.
@@ -210,6 +222,7 @@ class World(keyTracker):
         self.inst3 = addInstructions(0.75, "C tints mid LOD")
         self.inst3 = addInstructions(0.70, "V toggles buffer viewer")
         
+        base.accept("u",base.toggleWireframe)
         
         # Create the main character, Ralph
 
@@ -347,7 +360,7 @@ class World(keyTracker):
         # but it should also try to stay horizontal, so look at
         # a floater which hovers above ralph's head.
       
-        self.floater.setZ(10)
+        self.floater.setZ(5)
         base.camera.setPos(self.floater,0,0,0)
         base.camera.setPos(base.camera,0,-self.camDist,0)
         

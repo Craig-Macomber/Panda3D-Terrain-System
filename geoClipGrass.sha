@@ -1,0 +1,70 @@
+//Cg
+
+
+float unpackFloat(float3 h){
+return h.x+h.y/256+h.z/(256*256);
+}
+
+
+
+void vshader(
+    uniform float4x4 mat_modelproj,
+    in float4 vtx_position : POSITION,
+    uniform float4 k_offset,
+    uniform float4 k_tileOffset,
+    uniform float4 k_n,
+    uniform float4 k_heightMapRez,
+    out float2 l_uv: TEXCOORD0,
+    in uniform sampler2D tex_0: TEXUNIT0, 
+    in uniform sampler2D tex_2: TEXUNIT2,
+    out float l_height : TEXCOORD1,
+    out float2 l_uvSheet: TEXCOORD2,
+    out float4 l_position : POSITION)
+{
+    sampler2D tex_grassData=tex_2;
+    sampler2D tex_height=tex_0;
+    float2 rPos=round(vtx_position.xy);
+    float2 fGridPos=rPos+k_offset.xy;
+    int2 gridPos=int2(fGridPos);
+    
+    float2 ftileGridPos=(fGridPos+k_tileOffset.xy);
+    
+    l_uv=(ftileGridPos+.5)/(k_heightMapRez.x);
+    
+    l_height=unpackFloat(tex2D(tex_height,l_uv).xyz);
+    float4 data=tex2D(tex_grassData,l_uv);
+    
+    float fPos=vtx_position.x-rPos.x;
+    l_uvSheet=float2(fPos*2+.5,vtx_position.z);
+    fPos*=3;
+    float2 pos;
+    sincos(data.z*3.1415*8,pos.x,pos.y);
+    float height=vtx_position.z*(data.w+.5);
+    float2 sway;
+    sincos(data.z*3.1415*15,sway.x,sway.y);
+    pos=rPos+(data.xy-float2(0.5,0.5))*1+fPos*pos+height*sway*4.0;
+    
+    l_position = mul(mat_modelproj, float4(pos,l_height+height/200,1));
+}
+
+
+void fshader( 
+  in float2 l_uv: TEXCOORD0,
+  in float2 l_uvSheet: TEXCOORD2,
+  uniform float4 k_n,
+  in float l_height : TEXCOORD1,
+  in uniform sampler2D tex_0: TEXUNIT0, 
+  in uniform sampler2D tex_1: TEXUNIT1,
+  in uniform sampler2D tex_2: TEXUNIT2,
+  out float4 o_color: COLOR) 
+{
+    //float2 uv=(l_pos//abs(round((l_pos))-(l_pos));///k_n.x;
+    //o_color=float4(l_uv,0,0);
+    //o_color=float4(sin(l_height*500)/(l_height*100+.05),l_height,0,0);
+    o_color=tex2D(tex_1,l_uvSheet);//*float4(.5,1,.1,0);//float4(uv,0,0);
+    if (o_color.w<.5){discard;}
+    float d=l_uvSheet.y*.8+.2;
+    o_color*=float4(d,d,d,0);
+    //o_color.w=0;
+    //o_color=float4(1,1,1,0);
+} 
