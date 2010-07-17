@@ -1,11 +1,19 @@
 //Cg
 
 
+
+const float clumpWidthScalar=3.0;
+const float alphaThreshold=.1;
+const float tiltScalar=5.0;
+const float heightScalar=1.0/200;
+const float positionVariability=2.0;
+const float minHeight=0.5; //(added to 0-1 height)
+
+
+
 float unpackFloat(float3 h){
 return h.x+h.y/256+h.z/(256*256);
 }
-
-
 
 void vshader(
     uniform float4x4 mat_modelproj,
@@ -36,15 +44,16 @@ void vshader(
     
     float fPos=vtx_position.x-rPos.x;
     l_uvSheet=float2(fPos*2+.5,vtx_position.z);
-    fPos*=3;
+    
+    fPos*=clumpWidthScalar;
     float2 pos;
     sincos(data.z*3.1415*8,pos.x,pos.y);
-    float height=vtx_position.z*(data.w+.5);
+    float height=vtx_position.z*(data.w+minHeight);
     float2 sway;
     sincos(data.z*3.1415*15,sway.x,sway.y);
-    pos=rPos+(data.xy-float2(0.5,0.5))*1+fPos*pos+height*sway*4.0;
+    pos=rPos+(data.xy-float2(0.5,0.5))*positionVariability+fPos*pos+height*sway*tiltScalar*frac(data.w*32);
     
-    l_position = mul(mat_modelproj, float4(pos,l_height+height/200,1));
+    l_position = mul(mat_modelproj, float4(pos,l_height+height*heightScalar,1));
 }
 
 
@@ -58,13 +67,8 @@ void fshader(
   in uniform sampler2D tex_2: TEXUNIT2,
   out float4 o_color: COLOR) 
 {
-    //float2 uv=(l_pos//abs(round((l_pos))-(l_pos));///k_n.x;
-    //o_color=float4(l_uv,0,0);
-    //o_color=float4(sin(l_height*500)/(l_height*100+.05),l_height,0,0);
-    o_color=tex2D(tex_1,l_uvSheet);//*float4(.5,1,.1,0);//float4(uv,0,0);
-    if (o_color.w<.5){discard;}
-    float d=l_uvSheet.y*.8+.2;
+    o_color=tex2D(tex_1,l_uvSheet);
+    if (o_color.w<alphaThreshold){discard;}
+    float d=1.0;
     o_color*=float4(d,d,d,0);
-    //o_color.w=0;
-    //o_color=float4(1,1,1,0);
 } 

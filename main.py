@@ -206,6 +206,8 @@ class keyTracker(DirectObject):
         
         self.keyMap[name]=False
 
+mouseControl=True
+
 class World(keyTracker):
     def __init__(self):
         keyTracker.__init__(self)
@@ -291,7 +293,7 @@ class World(keyTracker):
         turnUpAmmount*=elapsed*100
         
         # Use mouse input to turn both Ralph and the Camera 
-        if base.mouseWatcherNode.hasMouse(): 
+        if mouseControl and base.mouseWatcherNode.hasMouse(): 
             # get changes in mouse position 
             md = base.win.getPointer(0) 
             x = md.getX() 

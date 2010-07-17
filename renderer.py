@@ -218,7 +218,8 @@ class GeoClipMapper(RenderNode):
         self.grass.setTexture(self.grassStage,grassTex)
         self.grassSheetStage=TextureStage("grassSheet")
         self.grass.setTexture(self.grassSheetStage,grassTex)
-        
+        grassTex.setWrapU(Texture.WMClamp)
+        grassTex.setWrapV(Texture.WMClamp)
         
     def setUpGrass(self,node,rez):
         # create a mesh thats a bunch of disconnected rectangles, 1 tall, 0.5 wide, at every grid point
