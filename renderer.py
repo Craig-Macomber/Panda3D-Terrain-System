@@ -111,7 +111,7 @@ class GeoClipMapper(RenderNode):
         self.tileSource=tileSource
         self.heightStage=TextureStage("height")
         
-        rezFactor=80
+        rezFactor=40
         n=rezFactor*4-1
         
         if n+4>=self.heightMapRez:
@@ -213,7 +213,8 @@ class GeoClipMapper(RenderNode):
         
         
         self.grass=self.setUpGrass(center,n)
-        grassTex=loadTex("grassSheet")
+        #grassTex=loadTex("grassSheet")
+        grassTex = loader.loadTexture("grassSheet.png", "grassSheet_mask.png")
         self.grassStage=TextureStage("grassData")
         self.grass.setTexture(self.grassStage,grassTex)
         self.grassSheetStage=TextureStage("grassSheet")
@@ -259,6 +260,7 @@ class GeoClipMapper(RenderNode):
         grass.setAttrib(CullFaceAttrib.make(CullFaceAttrib.MCullNone))
         grass.setShaderInput("offset",ofx,ofy,0,0)
         grass.setShader(loader.loadShader("geoClipGrass.sha"))
+        
         
         #grass.setTexture(self.grassStage,dataTex)
         return grass

@@ -4,7 +4,7 @@ from textureRenderer import *
 qq=Queue()
 
 # Size Map textures are rendered
-tileMapSize=512
+tileMapSize=256
 
 # Makes debugging shaders easier
 useShaderFiles=False
@@ -438,11 +438,13 @@ class MapShader:
         
         
 def loadTex(path):
-    extensions=['png','jpg']
+    extensions=['png','jpg','tiff','tif']
     for t in extensions:
         tex=loader.loadTexture(path+'.'+t,okMissing=True)
         if tex!=None:
-            return tex
+            tex2=loader.loadTexture(path+'.'+t,path+'_mask.'+t,okMissing=True)
+            print tex2
+            return tex2 if tex2!=None else tex
      
 class Map:
     """A rendered Map for a tile"""
