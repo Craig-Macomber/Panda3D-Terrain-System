@@ -443,7 +443,7 @@ def loadTex(path):
         tex=loader.loadTexture(path+'.'+t,okMissing=True)
         if tex!=None:
             tex2=loader.loadTexture(path+'.'+t,path+'_mask.'+t,okMissing=True)
-            print tex2
+            #print tex2
             return tex2 if tex2!=None else tex
      
 class Map:

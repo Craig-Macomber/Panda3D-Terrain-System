@@ -203,9 +203,7 @@ class GeoClipMapper(RenderNode):
         self.terrainNode.setScale(scale,scale,self.heightScale)
         self.terrainNode.setShader(loader.loadShader("geoClip.sha"))
         
-        for r in self.levels:
-            for node in r.getChildren():
-                node.setShaderInput("offset",node.getX()+halfOffset,node.getY()+halfOffset,0,0)
+
         
         self.terrainNode.setShaderInput("n",n,0,0,0)
         # Add a task to keep updating the terrain
@@ -221,48 +219,51 @@ class GeoClipMapper(RenderNode):
         self.grass.setTexture(self.grassSheetStage,grassTex)
         grassTex.setWrapU(Texture.WMClamp)
         grassTex.setWrapV(Texture.WMClamp)
-        
+
+        for r in self.levels:
+            for node in r.getChildren():
+                node.setShaderInput("offset",node.getX()+halfOffset,node.getY()+halfOffset,0,0)
+
     def setUpGrass(self,node,rez):
         # create a mesh thats a bunch of disconnected rectangles, 1 tall, 0.5 wide, at every grid point
         format=GeomVertexFormat.getV3()
-        vdata=GeomVertexData('grid', format, Geom.UHStatic)
-        vertex=GeomVertexWriter(vdata, 'vertex')
-        grid=Geom(vdata)
-        snode=GeomNode('grid')
-        ofx=rez/2
-        ofy=rez/2
-        for x in xrange(rez):
-            for y in xrange(rez):
-                xp=x-ofx-.25-1
-                yp=y-ofy-1
-                vertex.addData3f(xp,yp,0)
-                vertex.addData3f(xp+.5,yp,0)
-                vertex.addData3f(xp,yp,1)
-                vertex.addData3f(xp+.5,yp,1)
-            
-        tri=GeomTristrips(Geom.UHStatic)
-        def index(lx,ly):
-            return (ly+lx*(rez))*4
-            
-        for x in xrange(rez):
-            for y in xrange(rez):
-                i=index(x,y)
-                tri.addVertex(i)
-                tri.addVertex(i+1)
-                
-                tri.addVertex(i+2)
-                tri.addVertex(i+3)
-                tri.closePrimitive()
-        grid.addPrimitive(tri)
-        snode.addGeom(grid)
-        grass=NodePath(snode)
+        grass=NodePath("grass")
         grass.reparentTo(node)
         grass.setAttrib(CullFaceAttrib.make(CullFaceAttrib.MCullNone))
-        grass.setShaderInput("offset",ofx,ofy,0,0)
         grass.setShader(loader.loadShader("geoClipGrass.sha"))
-        
-        
-        #grass.setTexture(self.grassStage,dataTex)
+        def makeGrid(ofx,ofy,rez):
+            vdata=GeomVertexData('grid', format, Geom.UHStatic)
+            vertex=GeomVertexWriter(vdata, 'vertex')
+            grid=Geom(vdata)
+            snode=GeomNode('grid')
+            for x in xrange(rez):
+                for y in xrange(rez):
+                    xp=x-ofx-.25-1
+                    yp=y-ofy-1
+                    vertex.addData3f(xp,yp,0)
+                    vertex.addData3f(xp+.5,yp,0)
+                    vertex.addData3f(xp,yp,1)
+                    vertex.addData3f(xp+.5,yp,1)
+                
+            tri=GeomTristrips(Geom.UHStatic)
+            def index(lx,ly):
+                return (ly+lx*(rez))*4
+                
+            for x in xrange(rez):
+                for y in xrange(rez):
+                    i=index(x,y)
+                    tri.addVertex(i)
+                    tri.addVertex(i+1)
+                    
+                    tri.addVertex(i+2)
+                    tri.addVertex(i+3)
+                    tri.closePrimitive()
+            grid.addPrimitive(tri)
+            snode.addGeom(grid)
+            block=NodePath(snode)
+            block.reparentTo(grass)
+            
+        makeGrid(rez/2,rez/2,rez)
         return grass
         
     def update(self,task):
