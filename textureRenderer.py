@@ -71,7 +71,7 @@ class Queue:
                     
                 # maybe should use RTMCopyTexture?
                 mode=GraphicsOutput.RTMCopyRam if self.currentItem.toRam else GraphicsOutput.RTMBindOrCopy
-                self.currentBuff.addRenderTexture(self.currentItem.texture,GraphicsOutput.RTMCopyRam)
+                self.currentBuff.addRenderTexture(self.currentItem.texture,mode)
                 
                 self.cam=self.currentItem.getCam()
 

@@ -209,10 +209,10 @@ class Bakery:
         
         return altCam
         
-    def asyncRenderMap(self, rawTile, inputMaps, shader, callback, callbackParams=()):
+    def asyncRenderMap(self, rawTile, inputMaps, shader, callback, callbackParams=(),toRam=False):
         size=shader.getRez(tileMapSize)
         
-        q=QueueItem(size,size,self._asyncRenderMapDone,self.getRenderMapCam, (callback,shader.name,callbackParams), (rawTile, inputMaps, shader, size),toRam=False)
+        q=QueueItem(size,size,self._asyncRenderMapDone,self.getRenderMapCam, (callback,shader.name,callbackParams), (rawTile, inputMaps, shader, size),toRam=toRam)
         qq.queue.append(q)
     
     def _asyncRenderMapDone(self,tex,callback,name,callbackParams):
@@ -285,7 +285,8 @@ class _AsyncMapRenderer:
         inputMaps=[]
         for m in s.inputMapNames:
             inputMaps.append(self.maps[m])
-        self.bakery.asyncRenderMap(self.rawTile,inputMaps,s,self.mapDone,[s.name])
+        toRam=s.name in self.bakery.renderMapNames
+        self.bakery.asyncRenderMap(self.rawTile,inputMaps,s,self.mapDone,[s.name],toRam=toRam)
         
     def mapDone(self,map,name):
         self.maps[name]=map
