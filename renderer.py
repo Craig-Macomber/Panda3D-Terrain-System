@@ -121,6 +121,11 @@ class GeoClipMapper(RenderNode):
         m=(n+1)/4
         
         self.baseTileScale=minScale/n*self.heightMapRez
+        scale=minScale/(n-1)
+        self.terrainNode.setScale(scale,scale,scale)
+        shaderHeightScale=self.heightScale/scale
+        self.terrainNode.setShaderInput("heightScale",shaderHeightScale,0,0)
+        self.terrainNode.setShader(loader.loadShader("geoClip.sha"))
         
         def makeGrid(xSize,ySize):
             """ Size is in verts, not squares """
@@ -148,6 +153,8 @@ class GeoClipMapper(RenderNode):
             grid.addPrimitive(tri)
             
             snode.addGeom(grid)
+            snode.setBounds(BoundingBox(Point3(0,0,0),Point3(xSize-1,ySize-1,shaderHeightScale)))
+            snode.setFinal(True)
             return snode
         
         
@@ -161,7 +168,7 @@ class GeoClipMapper(RenderNode):
 
         
         center=_GeoClipLevel(0,self)
-        NodePath(nxn).copyTo(center).setPos(-n/2,-n/2,0)
+        NodePath(nxn).instanceTo(center).setPos(-n/2,-n/2,0)
         center.reparentTo(self.terrainNode)
         
         halfOffset=n/2
@@ -187,23 +194,28 @@ class GeoClipMapper(RenderNode):
         doCorner(-1,1)
         doCorner(1,1)
         
-        ringCount=4
-        
+        ringCount=6
+        center.node().setBoundsType(BoundingVolume.BTBox)
+        center.node().setFinal(1)
         self.levels=[center]
         for i in xrange(ringCount):
             r=_GeoClipLevel(i+1,self)
             r.reparentTo(self.terrainNode)
             for c in ring.getChildren():
-                c.copyTo(r)
-            
+                x=c.copyTo(r)
+                #v1=Point3()
+                #v2=Point3()
+                #x.calcTightBounds(v1,v2)
+                #v2.setZ(1)
+                node=x.node()
+                node.setBoundsType(BoundingVolume.BTBox)
+                #node.setBounds(c.node().getBounds())#(BoundingBox(v1,v2))
+                node.setFinal(1)
+                #x.showBounds()
+            #r.showBounds()
+            r.node().setBoundsType(BoundingVolume.BTBox)
             self.levels.append(r)
         
-        
-        scale=minScale/(n-1)
-        self.terrainNode.setScale(scale,scale,self.heightScale)
-        self.terrainNode.setShader(loader.loadShader("geoClip.sha"))
-        
-
         
         self.terrainNode.setShaderInput("n",n,0,0,0)
         # Add a task to keep updating the terrain
@@ -214,7 +226,7 @@ class GeoClipMapper(RenderNode):
         #grassTex=loadTex("grassSheet")
         grassTex = loader.loadTexture("grassSheet.png", "grassSheet_mask.png")
         self.grassStage=TextureStage("grassData")
-        self.grass.setTexture(self.grassStage,grassTex)
+        self.grass.setShaderInput("grass",grassTex)
         self.grassSheetStage=TextureStage("grassSheet")
         self.grass.setTexture(self.grassSheetStage,grassTex)
         grassTex.setWrapU(Texture.WMClamp)
@@ -223,7 +235,9 @@ class GeoClipMapper(RenderNode):
         for r in self.levels:
             for node in r.getChildren():
                 node.setShaderInput("offset",node.getX()+halfOffset,node.getY()+halfOffset,0,0)
-
+        
+        self.centerTile=None
+        
     def setUpGrass(self,node,rez):
         # create a mesh thats a bunch of disconnected rectangles, 1 tall, 0.5 wide, at every grid point
         format=GeomVertexFormat.getV3()
@@ -265,22 +279,41 @@ class GeoClipMapper(RenderNode):
             
         makeGrid(rez/2,rez/2,rez)
         return grass
+    
+    def height(self,x,y):
+        if self.centerTile is None: return 0
+        #print 'y'
+        tile=self.centerTile
+        peeker=self.heightPeeker
+        tx=(x-tile.x)/tile.scale
+        ty=(y-tile.y)/tile.scale
+        c=Vec4()
+        sx=peeker.getXSize()
+        sy=peeker.getYSize()
+        u=round(sx*tx)/sx
+        v=round(sy*ty)/sy
+        peeker.lookup(c,u,v)
+        h=c.getX()+c.getY()/256+c.getZ()/(256*256)
+        return h*self.heightScale
         
     def update(self,task):
         center=self.levels[0]
         if center.lastTile:
-            pass
-            #print self.specialMaps['grassData']
-            #center.lastTile.saveMaps('pics/')
-            self.grass.setTexture(self.grassStage,center.lastTile.renderMaps[self.specialMaps['grassData']].tex)
-            #print 'x'
-            #print self.grass.findAllTextureStages()
+            maps=center.lastTile.renderMaps
+            self.grass.setShaderInput("grassData",maps[self.specialMaps['grassData']].tex)
+            t=maps[self.specialMaps['height']].tex
+            if self.centerTile is not center.lastTile: # new height tex!
+                #t.makeRamImage()
+                #r=t.getRamImage()
+                #print 'x'
+                self.heightPeeker=t.peek()
+                self.centerTile=center.lastTile
         for i in xrange(len(self.levels),0,-1):
             self.levels[i-1].update(self.levels[i] if i<len(self.levels) else None)
         return task.cont
         
         
-    def height(self,x,y): return 0        
+    #def height(self,x,y): return 0        
         
 class _GeoClipLevel(NodePath):
     def __init__(self,level,geoClipMapper):
@@ -292,8 +325,8 @@ class _GeoClipLevel(NodePath):
         self.level=level
         self.geoClipMapper=geoClipMapper
         
-        self.heightTex=loadTex("render/textures/grass")#Texture()
-        self.setTexture(geoClipMapper.heightStage,self.heightTex)
+        self.heightTex=loadTex("render/textures/grass")
+        self.setShaderInput("height",self.heightTex)
         
         scale=2**(level)
         self.setScale(scale,scale,1)
@@ -360,7 +393,7 @@ class _GeoClipLevel(NodePath):
         tex=self.lastTile.renderMaps[self.geoClipMapper.specialMaps['height']].tex
         tex.setMinfilter(Texture.FTNearest)
         tex.setMagfilter(Texture.FTNearest)
-        self.setTexture(self.geoClipMapper.heightStage,tex)
+        self.setShaderInput("height",tex)
         
     
 class RenderTiler(RenderNode):

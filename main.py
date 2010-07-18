@@ -94,7 +94,7 @@ n.setScale(terrainScale)
 
 
 
-
+base.setBackgroundColor(.3,.3,.8,0)
 
 
 
@@ -106,6 +106,9 @@ class UI(DirectObject):
         self.accept("x", self.analize)
         self.accept("c", self.color)
         self.accept("o", base.toggleWireframe)
+        self.accept("u", base.oobe)
+        self.accept("y", base.oobeCull)
+        
         
         base.bufferViewer.setPosition("llcorner")
         base.bufferViewer.setCardSize(.25, 0.0)
@@ -120,6 +123,7 @@ class UI(DirectObject):
         print ""
         render.analyze()
         print ""
+        if renderer is GeoClipMapper: return
         print n.tilesMade," Tiles Made for high LOD"
         print len(n.getTiles()), " Tiles displaying for high LOD"
         
@@ -131,6 +135,7 @@ class UI(DirectObject):
             print len(bg2.getTiles()), " Tiles displaying for low LOD"
         
     def color(self):
+        if renderer is GeoClipMapper: return
         if useMidLOD:
             if bg1.hasColor():
                 bg1.clearColor()
@@ -206,7 +211,7 @@ class keyTracker(DirectObject):
         
         self.keyMap[name]=False
 
-mouseControl=True
+mouseControl=False
 
 class World(keyTracker):
     def __init__(self):
@@ -224,7 +229,7 @@ class World(keyTracker):
         self.inst3 = addInstructions(0.75, "C tints mid LOD")
         self.inst3 = addInstructions(0.70, "V toggles buffer viewer")
         
-        base.accept("u",base.toggleWireframe)
+        
         
         # Create the main character, Ralph
 
@@ -276,8 +281,9 @@ class World(keyTracker):
         base.camera.setH(180)
         
         base.camera.reparentTo(self.ralph)
-        self.camDist=100.0
-        
+        self.camDist=0.0
+        self.floater.setZ(6)
+        self.floater.setY(-1)
         
     def move(self, task):
 
@@ -307,7 +313,7 @@ class World(keyTracker):
             turnUpAmmount-= 0.2 * deltaY 
             
         zoomOut=self.keyMap["zoom"]
-        self.camDist=max(min(60000,self.camDist+zoomOut*elapsed*50+zoomOut*self.camDist*elapsed*.5),30)
+        self.camDist=max(min(60000,self.camDist+zoomOut*elapsed*50+zoomOut*self.camDist*elapsed*.5),.5)
         self.keyMap["zoom"]*=2.7**(-elapsed*4)# Smooth fade out of zoom speed
         
         
@@ -362,7 +368,7 @@ class World(keyTracker):
         # but it should also try to stay horizontal, so look at
         # a floater which hovers above ralph's head.
       
-        self.floater.setZ(5)
+        
         base.camera.setPos(self.floater,0,0,0)
         base.camera.setPos(base.camera,0,-self.camDist,0)
         

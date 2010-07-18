@@ -1,0 +1,26 @@
+//Cg
+//Cg profile gp4vp gp4fp
+
+void vshader(
+    uniform float4x4 mat_modelproj,
+    in float4 vtx_position : POSITION,
+    in float4 vtx_color : COLOR,
+    in float2 vtx_texcoord0 : TEXCOORD0,
+    in varying int o_id : INSTANCEID,
+    out float2 l_tex: TEXCOORD0,
+    out float4 l_color : COLOR,
+    out float4 l_position : POSITION)
+{
+    l_position = mul(mat_modelproj, vtx_position*o_id);
+    l_color = vtx_color;
+    l_tex=vtx_texcoord0;
+}
+
+void fshader( 
+  in float2 l_tex: TEXCOORD0,
+  in uniform sampler2D tex_0: TEXUNIT0,
+  in float4 l_color: COLOR,
+  out float4 o_color: COLOR) 
+{ 
+    o_color=l_color*tex2D(tex_0,l_tex);
+} 

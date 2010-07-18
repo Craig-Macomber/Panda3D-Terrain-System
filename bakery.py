@@ -1,10 +1,12 @@
+import os
+
 from panda3d.core import *
 from textureRenderer import *
 
 qq=Queue()
 
 # Size Map textures are rendered
-tileMapSize=256
+tileMapSize=512
 
 # Makes debugging shaders easier
 useShaderFiles=False
@@ -440,11 +442,12 @@ class MapShader:
 def loadTex(path):
     extensions=['png','jpg','tiff','tif']
     for t in extensions:
-        tex=loader.loadTexture(path+'.'+t,okMissing=True)
-        if tex!=None:
-            tex2=loader.loadTexture(path+'.'+t,path+'_mask.'+t,okMissing=True)
-            #print tex2
-            return tex2 if tex2!=None else tex
+        if os.path.exists(path+'.'+t):
+            if os.path.exists(path+'_mask.'+t):
+                tex=loader.loadTexture(path+'.'+t,path+'_mask.'+t)
+            else:
+                tex=loader.loadTexture(path+'.'+t)
+            return tex
      
 class Map:
     """A rendered Map for a tile"""
