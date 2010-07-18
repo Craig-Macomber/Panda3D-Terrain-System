@@ -224,7 +224,7 @@ class GeoClipMapper(RenderNode):
         
         self.grass=self.setUpGrass(center,n)
         #grassTex=loadTex("grassSheet")
-        grassTex = loader.loadTexture("grassSheet.png", "grassSheet_mask.png")
+        grassTex = loadTex("grassSheet",True)
         self.grassStage=TextureStage("grassData")
         self.grass.setShaderInput("grass",grassTex)
         self.grassSheetStage=TextureStage("grassSheet")

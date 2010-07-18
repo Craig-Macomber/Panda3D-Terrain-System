@@ -439,15 +439,25 @@ class MapShader:
         return int(round(baseRez*self.resolutionScale+self.addPixels))
         
         
-def loadTex(path):
+def loadTex(pathx,mask=False):
+    path=pathPrefix()+pathx
     extensions=['png','jpg','tiff','tif']
     for t in extensions:
-        if os.path.exists(path+'.'+t):
-            if os.path.exists(path+'_mask.'+t):
-                tex=loader.loadTexture(path+'.'+t,path+'_mask.'+t)
+        #if os.path.exists(path+'.'+t):
+        #    if os.path.exists(path+'_mask.'+t):
+        #        tex=loader.loadTexture(path+'.'+t,path+'_mask.'+t)
+        #    else:
+        #        tex=loader.loadTexture(path+'.'+t)
+            if mask:
+                tex=loader.loadTexture(path+'.'+t,path+'_mask.'+t,okMissing=True)
             else:
-                tex=loader.loadTexture(path+'.'+t)
-            return tex
+                tex=loader.loadTexture(path+'.'+t,okMissing=True)
+            
+            if tex is None:
+                print "Texture load failed:",path+'.'+t
+            else:
+                return tex
+    print "Texture not found:",path
      
 class Map:
     """A rendered Map for a tile"""
