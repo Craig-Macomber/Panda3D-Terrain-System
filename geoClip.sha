@@ -5,7 +5,15 @@ float unpackFloat(float3 h){
 return h.x+h.y/256+h.z/(256*256);
 }
 
+float2 geoGlipUV(float2 vertxy, float2 offset, float2 tileOffset, float heightMapRez){
+    float2 fGridPos=vertxy+offset;
+    float2 ftileGridPos=fGridPos+tileOffset;
+    return (ftileGridPos+.5)/heightMapRez;
+}
 
+float hight(sampler2D k_height,float2 l_uv){
+    return unpackFloat(tex2D(k_height,l_uv).xyz);
+}
 
 void vshader(
     uniform float4x4 mat_modelproj,
@@ -21,15 +29,8 @@ void vshader(
     uniform in float4 k_heightScale
     )
 {
-    
-    float2 fGridPos=vtx_position.xy+k_offset.xy;
-    int2 gridPos=int2(fGridPos);
-    
-    float2 ftileGridPos=(fGridPos+k_tileOffset.xy);
-    
-    l_uv=(ftileGridPos+.5)/(k_heightMapRez.x);
-    
-    l_height=unpackFloat(tex2D(k_height,l_uv).xyz);
+    l_uv=geoGlipUV(vtx_position.xy,k_offset.xy,k_tileOffset.xy,k_heightMapRez.x);
+    l_height=hight(k_height,l_uv);
     l_position = mul(mat_modelproj, float4(vtx_position.xy,l_height*k_heightScale.x,1));
 }
 

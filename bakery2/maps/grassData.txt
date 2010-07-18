@@ -1,6 +1,6 @@
 :Settings
 #resolutionScale .5
-addPixels 1
+#addPixels 1
 
 :Tex2D
 noise

@@ -2,17 +2,27 @@
 
 
 
-const float clumpWidthScalar=2.0;
+const float clumpWidthScalar=1.0;
 const float alphaThreshold=.1;
 const float tiltScalar=2.0;
 const float heightScalar=6;
 const float positionVariability=1.0;
 const float minHeight=0.5; //(added to 0-1 height)
+const float widthVariability=5.0; // multiplied by 0-1 and added to clumpWidthScalar
 
 
+float2 geoGlipUV(float2 vertxy, float2 offset, float2 tileOffset, float heightMapRez){
+    float2 fGridPos=vertxy+offset;
+    float2 ftileGridPos=fGridPos+tileOffset;
+    return (ftileGridPos+.5)/heightMapRez;
+}
 
 float unpackFloat(float3 h){
 return h.x+h.y/256+h.z/(256*256);
+}
+
+float hight(sampler2D k_height,float2 l_uv){
+    return unpackFloat(tex2D(k_height,l_uv).xyz);
 }
 
 void vshader(
@@ -20,7 +30,6 @@ void vshader(
     in float4 vtx_position : POSITION,
     uniform float4 k_offset,
     uniform float4 k_tileOffset,
-    uniform float4 k_n,
     uniform float4 k_heightMapRez,
     out float2 l_uv: TEXCOORD0,
     in uniform sampler2D k_grassData: TEXUNIT0, 
@@ -32,21 +41,16 @@ void vshader(
     out float3 l_norm: TEXCOORD3
     )
 {
+    l_uv=geoGlipUV(vtx_position.xy,k_offset.xy,k_tileOffset.xy,k_heightMapRez.x);
+    l_height=hight(k_height,l_uv);
+    
     float2 rPos=round(vtx_position.xy);
-    float2 fGridPos=rPos+k_offset.xy;
-    int2 gridPos=int2(fGridPos);
-    
-    float2 ftileGridPos=(fGridPos+k_tileOffset.xy);
-    
-    l_uv=(ftileGridPos+.5)/(k_heightMapRez.x);
-    
-    l_height=unpackFloat(tex2D(k_height,l_uv).xyz);
     float4 data=tex2D(k_grassData,l_uv);
     
     float fPos=vtx_position.x-rPos.x;
     l_uvSheet=float2(fPos*2+.5,vtx_position.z);
     
-    fPos*=clumpWidthScalar;
+    fPos*=(clumpWidthScalar+widthVariability*frac(data.x*64));
     float2 pos;
     sincos(data.z*3.1415*8,pos.x,pos.y);
     float height=vtx_position.z*(data.w+minHeight);
@@ -75,7 +79,7 @@ void fshader(
 {
     o_color=tex2D(k_grass,l_uvSheet);
     if (o_color.w<alphaThreshold){discard;}
-    float d=max(0,dot(l_norm,float3(1,1,1)))*.5+.5;
+    float d=max(0,dot(l_norm,float3(1,1,1)))*.3+.7;
     o_color*=float4(d,d,d,0);
     //o_color.xyz=l_norm;
 } 
