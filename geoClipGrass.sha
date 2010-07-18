@@ -2,9 +2,9 @@
 
 
 
-const float clumpWidthScalar=6.0;
+const float clumpWidthScalar=2.0;
 const float alphaThreshold=.1;
-const float tiltScalar=5.0;
+const float tiltScalar=2.0;
 const float heightScalar=6;
 const float positionVariability=1.0;
 const float minHeight=0.5; //(added to 0-1 height)
