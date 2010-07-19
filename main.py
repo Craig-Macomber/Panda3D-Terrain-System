@@ -333,7 +333,7 @@ class World(keyTracker):
         forwardMove*=1.0-abs(rightMove)
         
         # Hyper mode. Prabably just for debug
-        speed=1+9*self.keyMap["hyper"]
+        speed=1+4*self.keyMap["hyper"]
 
         rightMove*=speed
         forwardMove*=speed

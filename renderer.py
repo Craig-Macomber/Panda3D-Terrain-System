@@ -80,7 +80,8 @@ class RenderNode(NodePath):
                     
                     setTexModes(s[3:])
                     
-                    self.terrainNode.setTexture(texStage,loadTex(path+"/textures/"+name))
+                    #self.terrainNode.setTexture(texStage,loadTex(path+"/textures/"+name))
+                    self.terrainNode.setShaderInput('tex2D_'+name,loadTex(path+"/textures/"+name))
                     self.texList.append((texStage,float(s[2])))
                     
                 elif source=='map':
@@ -258,14 +259,11 @@ class GeoClipMapper(RenderNode):
         
         self.grass=self.setUpGrass(center,n)
         grassTex = loadTex("grassSheet",True)
-        self.grassStage=TextureStage("grassData")
-        self.grass.setShaderInput("grass",grassTex)
-        self.grassSheetStage=TextureStage("grassSheet")
-        self.grass.setTexture(self.grassSheetStage,grassTex)
+        self.grass.setShaderInput("grassSheet",grassTex)
         grassTex.setWrapU(Texture.WMClamp)
         grassTex.setWrapV(Texture.WMClamp)
     
-        self.terrainNode.setShaderInput("offset",halfOffset,halfOffset,0,0)
+        self.terrainNode.setShaderInput("offset",0,0,0,0)
         
         #for r in self.levels:
         #    for node in r.getChildren():
@@ -344,17 +342,31 @@ class GeoClipMapper(RenderNode):
         sy=peeker.getYSize()
         px=(sx*tx)
         py=(sy*ty)
-        u=math.floor(px)/sx
-        v=math.floor(py)/sy
-        peeker.lookup(c,u,v)
-        h=c.getX()+c.getY()/256+c.getZ()/(256*256)
+        
+        
+        #u=math.floor(px)/sx
+        #v=math.floor(py)/sy
+        fu=px-math.floor(px)
+        fv=py-math.floor(py)
+        #u2=math.floor(px+1)/sx
+        #v2=math.floor(py)/sy
+        px=math.floor(px)
+        py=math.floor(py)
+        
+        #peeker.lookup(c,u,v)
+        def getH(x,y):
+            peeker.lookup(c,x/sx,y/sy)
+            return c.getX()+c.getY()/256+c.getZ()/(256*256)
+        h=(getH(px+1,py+1)*fu+getH(px,py+1)*(1-fu))*fv+(getH(px+1,py)*fu+getH(px,py)*(1-fu))*(1-fv)
+        
+        #peeker.filterRect(c,px/sx,py/sy,px/sx,py/sy)
+        #h=c.getX()+c.getY()/256+c.getZ()/(256*256)
         return h*self.heightScale
         
     def update(self,task):
         center=self.levels[0]
         if center.lastTile:
             maps=center.lastTile.renderMaps
-            self.grass.setShaderInput("grassData",maps[self.specialMaps['grassData']].tex)
             t=maps[self.specialMaps['height']].tex
             if self.centerTile is not center.lastTile: # new height tex!
                 self.heightPeeker=t.peek()
@@ -392,7 +404,7 @@ class _GeoClipLevel(NodePath):
         self.makingTile=False
         
         self.setShaderInput("tileOffset",0,0,0,0)
-        
+        self.setShaderInput("tilePos",0,0,0,0)
     def update(self,bigger):
         """ bigger is next larger _GeoClipLevel, or None is self is biggest """
         
@@ -426,10 +438,12 @@ class _GeoClipLevel(NodePath):
             mx=s/2-abs(dx)-self.geoClipMapper.rez/2
             my=s/2-abs(dy)-self.geoClipMapper.rez/2
             
-            ox=dx-self.geoClipMapper.rez/2+s/2
-            oy=dy-self.geoClipMapper.rez/2+s/2
+            ox=dx+s/2
+            oy=dy+s/2
             self.setShaderInput("tileOffset",ox,oy,0,0)
-            
+            self.setShaderInput("tilePos",self.lastTile.x,self.lastTile.y,self.lastTile.scale,0)
+            self.setShaderInput("grassData",self.lastTile.renderMaps[self.geoClipMapper.specialMaps['grassData']].tex)
+            self.setShaderInput("grassData2",self.lastTile.renderMaps[self.geoClipMapper.specialMaps['grassData2']].tex)
             
             m=min(mx,my)
                 

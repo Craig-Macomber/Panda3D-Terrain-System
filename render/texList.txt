@@ -6,6 +6,7 @@
 # MapName   SpecialUse
 height	height
 grassData	grassData
+grassData2	grassData2
 
 :Tex2D
 # TexFileName	source	[size, ignored source=map]	[TextureMode, CombineModes and SavedResult]
@@ -16,7 +17,7 @@ grassData	grassData
 # and http://www.panda3d.org/wiki/index.php/Texture_Combine_Modes
 
 #alpha	map	MReplace	Save
-#grass	file	.011	MReplace
+grass	file	.011	MReplace
 #Xwater	file	.23	CMInterpolate	CSTexture	COSrcColor	CSPrevious	COSrcColor	CSLastSavedResult	COSrcColor
 #ice	file	.21	Save	CMInterpolate	CSTexture	COSrcColor	CSPrevious	COSrcColor	CSLastSavedResult	COSrcAlpha
 ##city	map	CMReplace	CSTexture	COSrcAlpha

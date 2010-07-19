@@ -5,9 +5,8 @@ float unpackFloat(float3 h){
 return h.x+h.y/256+h.z/(256*256);
 }
 
-float2 geoGlipUV(float2 vertxy, float2 offset, float2 tileOffset, float heightMapRez){
-    float2 fGridPos=vertxy+offset;
-    float2 ftileGridPos=fGridPos+tileOffset;
+float2 geoGlipUV(float2 vertxy, float2 tileOffset, float heightMapRez){
+    float2 ftileGridPos=vertxy+tileOffset;
     return (ftileGridPos+.5)/heightMapRez;
 }
 
@@ -18,32 +17,46 @@ float hight(sampler2D k_height,float2 l_uv){
 void vshader(
     uniform float4x4 mat_modelproj,
     in float4 vtx_position : POSITION,
-    uniform float4 k_offset,
+    //uniform float4 k_offset,
     uniform float4 k_tileOffset,
-    uniform float4 k_n,
+    uniform float4 k_tilePos, //tile.x,tile.y,tile.scale
+    //uniform float4 k_n,
     uniform float4 k_heightMapRez,
     out float2 l_uv: TEXCOORD0,
-    in uniform sampler2D k_height: TEXUNIT0, 
+    in uniform sampler2D k_height: TEXUNIT0,
+    in uniform sampler2D k_grassData2: TEXUNIT3,
     out float l_height : TEXCOORD1,
     out float4 l_position : POSITION,
+    out float2 l_worldPos: TEXCOORD2,
+    out float l_bright: TEXCOORD3,
     uniform in float4 k_heightScale
     )
 {
-    l_uv=geoGlipUV(vtx_position.xy,k_offset.xy,k_tileOffset.xy,k_heightMapRez.x);
+    l_uv=geoGlipUV(vtx_position.xy.xy,k_tileOffset.xy,k_heightMapRez.x);
     l_height=hight(k_height,l_uv);
     l_position = mul(mat_modelproj, float4(vtx_position.xy,l_height*k_heightScale.x,1));
+    l_worldPos=l_uv*k_tilePos.z+k_tilePos.xy;
+    l_bright=1.0-tex2D(k_grassData2,l_uv).w*1;
 }
 
 
 void fshader( 
   in float2 l_uv: TEXCOORD0,
-  uniform float4 k_n,
+  //uniform float4 k_n,
   in float l_height : TEXCOORD1,
-  in uniform sampler2D k_height: TEXUNIT0, 
+  in uniform sampler2D k_tex2D_grass: TEXUNIT4, 
+  in float2 l_worldPos: TEXCOORD2,
+  in float l_bright: TEXCOORD3,
   out float4 o_color: COLOR) 
 {
     //float2 uv=(l_pos//abs(round((l_pos))-(l_pos));///k_n.x;
     //o_color=float4(l_uv,0,0);
-    o_color=float4(sin(l_height*500)/(l_height*100+.05),l_height,0,0);
+    //o_color=float4(sin(l_height*500)/(l_height*100+.05),l_height,0,0);
     //o_color=float4(tex2D(tex_height,l_uv).xyz,0);//float4(uv,0,0);
+    if (l_height<=0){
+        o_color=float4(.1,.1,.7,0);
+        }else{
+        o_color=tex2D(k_tex2D_grass,l_worldPos*50)*l_bright;//1*(tex2D(k_tex2D_grass,l_worldPos)*.5+.5)*
+        o_color.w=0;
+        }
 } 

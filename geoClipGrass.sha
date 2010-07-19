@@ -5,15 +5,14 @@
 const float clumpWidthScalar=1.0;
 const float alphaThreshold=.1;
 const float tiltScalar=2.0;
-const float heightScalar=6;
+const float heightScalar=30;
 const float positionVariability=1.0;
-const float minHeight=0.5; //(added to 0-1 height)
+const float minHeight=0.1; //(added to 0-1 height)
 const float widthVariability=5.0; // multiplied by 0-1 and added to clumpWidthScalar
 
 
-float2 geoGlipUV(float2 vertxy, float2 offset, float2 tileOffset, float heightMapRez){
-    float2 fGridPos=vertxy+offset;
-    float2 ftileGridPos=fGridPos+tileOffset;
+float2 geoGlipUV(float2 vertxy, float2 tileOffset, float heightMapRez){
+    float2 ftileGridPos=vertxy+tileOffset;
     return (ftileGridPos+.5)/heightMapRez;
 }
 
@@ -28,11 +27,11 @@ float hight(sampler2D k_height,float2 l_uv){
 void vshader(
     uniform float4x4 mat_modelproj,
     in float4 vtx_position : POSITION,
-    uniform float4 k_offset,
     uniform float4 k_tileOffset,
     uniform float4 k_heightMapRez,
     out float2 l_uv: TEXCOORD0,
-    in uniform sampler2D k_grassData: TEXUNIT0, 
+    in uniform sampler2D k_grassData: TEXUNIT0,
+    in uniform sampler2D k_grassData2: TEXUNIT3, 
     in uniform sampler2D k_height: TEXUNIT2,
     out float l_height : TEXCOORD1,
     out float2 l_uvSheet: TEXCOORD2,
@@ -41,7 +40,7 @@ void vshader(
     out float3 l_norm: TEXCOORD3
     )
 {
-    l_uv=geoGlipUV(vtx_position.xy,k_offset.xy,k_tileOffset.xy,k_heightMapRez.x);
+    l_uv=geoGlipUV(vtx_position.xy.xy,k_tileOffset.xy,k_heightMapRez.x);
     l_height=hight(k_height,l_uv);
     
     float2 rPos=round(vtx_position.xy);
@@ -54,6 +53,7 @@ void vshader(
     float2 pos;
     sincos(data.z*3.1415*8,pos.x,pos.y);
     float height=vtx_position.z*(data.w+minHeight);
+    height*=tex2D(k_grassData2,l_uv).w;
     float2 sway;
     sincos(data.z*3.1415*15,sway.x,sway.y);
     sway=height*sway*tiltScalar*frac(data.w*32);
@@ -73,11 +73,11 @@ void vshader(
 void fshader(
   in float2 l_uvSheet: TEXCOORD2,
   in float l_height : TEXCOORD1,
-  in uniform sampler2D k_grass: TEXUNIT1,
+  in uniform sampler2D k_grassSheet: TEXUNIT1,
   in float3 l_norm: TEXCOORD3,
   out float4 o_color: COLOR) 
 {
-    o_color=tex2D(k_grass,l_uvSheet);
+    o_color=tex2D(k_grassSheet,l_uvSheet);
     if (o_color.w<alphaThreshold){discard;}
     float d=max(0,dot(l_norm,float3(1,1,1)))*.3+.7;
     o_color*=float4(d,d,d,0);

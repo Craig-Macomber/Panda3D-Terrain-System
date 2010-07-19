@@ -9,6 +9,7 @@ height
 #city2
 #alpha
 grassData
+grassData2
 
 :MeshPlacement
 # A list of maps used to place meshes on the terrain
