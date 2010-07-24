@@ -1,0 +1,15 @@
+:Input
+waterDepth
+height
+
+:Shader
+float v;
+if (map_waterDepth.x>0){
+v=1;
+}else if(map_height.x>.5){
+v=1;
+}else{
+v=0;
+}
+
+return float4(0,0,0,v);

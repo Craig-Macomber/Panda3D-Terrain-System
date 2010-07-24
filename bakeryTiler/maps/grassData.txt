@@ -1,0 +1,15 @@
+:Settings
+#resolutionScale .5
+#addPixels 1
+
+:Tex2D
+noise
+
+:Input
+#baseHeight
+
+:Shader
+float scale=1761.123;
+float4 data=tex2D(tex2D_noise,pos*scale);
+data.w=tex2D(tex2D_noise,pos*scale+float2(7.84,9.66)).x;
+return data;

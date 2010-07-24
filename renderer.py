@@ -80,7 +80,7 @@ class RenderNode(NodePath):
                     
                     setTexModes(s[3:])
                     
-                    #self.terrainNode.setTexture(texStage,loadTex(path+"/textures/"+name))
+                    self.terrainNode.setTexture(texStage,loadTex(path+"/textures/"+name))
                     self.terrainNode.setShaderInput('tex2D_'+name,loadTex(path+"/textures/"+name))
                     self.texList.append((texStage,float(s[2])))
                     
@@ -95,7 +95,6 @@ class GeoClipMapper(RenderNode):
     def __init__(self,path,tileSource,minScale,focus):
         RenderNode.__init__(self,path,NodePath(path+"_terrainNode"))
         
-        #self.heightMapRez=256##########Gonna need to compute/get this somehow!
         heightMapName=self.specialMaps['height']
         self.heightMapRez=0
         for s in tileSource.shaders:
@@ -523,9 +522,9 @@ class RenderAutoTiler(RenderTiler):
         # Stores (tile x index, tile y index) : distance
         needTiles={}
         
-        addRange=xrange(int(-ceil(self.addThreshold)),int(ceil(self.addThreshold)))
-        xOffset=int(ceil(camTilePos.getX()))
-        yOffset=int(ceil(camTilePos.getY()))
+        addRange=xrange(int(-math.ceil(self.addThreshold)),int(math.ceil(self.addThreshold)))
+        xOffset=int(math.ceil(camTilePos.getX()))
+        yOffset=int(math.ceil(camTilePos.getY()))
         vecOffset=Vec3(xOffset,yOffset,0)
         for x in addRange:
             for y in addRange:

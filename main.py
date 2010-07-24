@@ -22,18 +22,10 @@ backBinName="background"
 
 """This is a test/demo of the terrain system."""
 
-
-#s=loader.loadModel('models/Scrub')
-#s.reparentTo(render)
-#s.setScale(.2)
-#s.setInstanceCount(20)
-#s.setShaderInput('id',0)
-#s.setShader(loader.loadShader('instanceTest.sha'))
-
-
-
-# Create a bakery that uses the "bakery2" folder for its resources
-b=LiveBakery(None,"bakery2")
+############## Select a renderer! ##############
+renderer=GeoClipMapper
+#renderer=RenderAutoTiler
+############## Select a renderer! ##############
 
 
 tileSize=.1
@@ -42,18 +34,19 @@ terrainScale=100
 focus=NodePath("tilerFocuse")
 
 
-useLowLOD=False
-useMidLOD=False
 
-renderer=GeoClipMapper
 
 if renderer is GeoClipMapper:
+    # Create a bakery that uses the "bakery2" folder for its resources
+    b=LiveBakery(None,"bakery2")
     n=GeoClipMapper('render',b,.02,focus)
 else:
+    # Create a bakery that uses the "bakery2" folder for its resources
+    b=LiveBakery(None,"bakeryTiler")
     #Make the main (highest LOD) tiler
-    n=RenderAutoTiler('render',b,tileSize,focus,3.0,4.0)
-    useLowLOD=True
-    useMidLOD=True
+    n=RenderAutoTiler('renderTiler',b,tileSize,focus,3.0,4.0)
+    useLowLOD=False
+    useMidLOD=False
     
     
     # Setup a card maker for depth reset cards for between LOD draws
@@ -72,7 +65,7 @@ else:
     clearCardHolder.setAttrib(ColorWriteAttrib.make(ColorWriteAttrib.MNone))
     
     def addTerrainLOD(sort,scale,addDist,removeDist):
-        bg=RenderAutoTiler('render',b,tileSize*scale,focus,addDist,removeDist)
+        bg=RenderAutoTiler('renderTiler',b,tileSize*scale,focus,addDist,removeDist)
         bg.reparentTo(render)
         bg.setBin(backBinName,sort)
         bg.setScale(terrainScale)
@@ -158,7 +151,7 @@ render.setLight(alnp)
 
 
 dayCycle=dlnp.hprInterval(20.0,Point3(0,360,0))
-#dayCycle.loop()
+dayCycle.loop()
 
 
 # Filter to display the glow map's glow via bloom.

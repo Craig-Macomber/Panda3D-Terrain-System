@@ -6,7 +6,7 @@ from textureRenderer import *
 qq=Queue()
 
 # Size Map textures are rendered
-tileMapSize=512
+tileMapSize=256
 
 # Makes debugging shaders easier
 useShaderFiles=False

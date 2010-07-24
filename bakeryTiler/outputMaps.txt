@@ -1,0 +1,14 @@
+# All lists in this file start with a map name
+
+:Render
+# A list of maps used to render terrain.
+#color
+#gloss
+height
+city
+#city2
+alpha
+
+:MeshPlacement
+# A list of maps used to place meshes on the terrain
+# Could be cell noise style, 1 cell per px.
