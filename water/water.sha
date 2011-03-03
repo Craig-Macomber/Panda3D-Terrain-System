@@ -1,0 +1,80 @@
+//Cg
+//Cg profile arbvp1 arbfp1
+
+
+//
+// OUT
+// texcoord0: projective mapping for the reflection texture
+// texcoord1: texture coords into the distortion map, scaled and animated
+//
+void vshader( 	in float4 vtx_position : POSITION,
+                in float3 vtx_normal : NORMAL,
+		in float2 vtx_texcoord0 : TEXCOORD0,
+		in uniform float4 k_time,
+		in uniform float4 k_wateranim,
+                in uniform float4x4 mat_modelproj,
+                in uniform float4x4 mat_modelview,
+                in uniform float4x4 mat_projection,
+
+                out float4 l_position : POSITION,
+                out float4 l_texcoord0 : TEXCOORD0,
+                out float4 l_texcoord1 : TEXCOORD1)
+
+{
+	
+	// transform vertex position by combined view projection matrix
+   	l_position = mul(mat_modelproj, vtx_position);
+
+
+    	// projective matrix (MR)
+    	float4x4 scaleMatrix = { 0.5f, 0.0f, 0.0f, 0.5f,
+        	                 0.0f, 0.5f, 0.0f, 0.5f,
+                                 0.0f, 0.0f, 0.5f, 0.5f,
+                                 0.0f, 0.0f, 0.0f, 1.0f };
+   	float4x4 matMR = mul(scaleMatrix, mat_modelproj);
+
+	// transform the vertex position by the projective
+   	// texture matrix and copy the result into homogeneous
+   	// texture coordinate set 0
+   	l_texcoord0 = mul(matMR, vtx_position);
+
+	// water distortion map
+    	// animate and scale distortions
+    	l_texcoord1.xy = vtx_texcoord0.xy * k_wateranim.z + k_wateranim.xy * k_time.x;
+
+}
+
+//
+// IN
+// tex_0: reflection texture as produced by reflection camera
+// tex_1: distortion texture
+//
+void fshader( 	in float4 l_texcoord0 : TEXCOORD0,
+		in float4 l_texcoord1 : TEXCOORD1,
+              	in uniform sampler2D tex_0 : TEXUNIT0,
+		in uniform sampler2D tex_1 : TEXUNIT1,
+		in uniform float4 k_waterdistort,
+		out float4 o_color : COLOR)
+{
+	// calculate distortion from distortion map
+	float4 distortion = normalize(tex2Dproj(tex_1, l_texcoord1) - k_waterdistort.x) * k_waterdistort.y;
+
+	// projectively sample the 2D reflection texture
+   	// o_color.rgb = tex2Dproj(tex_0, l_texcoord0).rgb;
+   	float4 reflection  = tex2Dproj(tex_0, l_texcoord0+distortion);
+
+	// refraction factor: smaller numbers make the water appear more reflective ("shinier")
+    	float factor = k_waterdistort.z;
+
+	// refraction (1.0 = perfect mirror, 0.0 total refraction)
+	float ref = k_waterdistort.w;
+	float4 refraction = float4(ref, ref, ref, 0.0f);
+
+	// calculate fragment color
+	o_color = lerp( reflection, refraction, factor );
+
+   	// optionally set alpha component to transparency,
+   	// a constant value in this simple example
+   	// o_color.a = 0.6;
+}
+

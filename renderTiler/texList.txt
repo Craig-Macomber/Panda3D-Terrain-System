@@ -4,7 +4,7 @@
 # A list of maps that have special uses.
 # Currently the only special use is height.
 # MapName   SpecialUse
-height	height
+baseHeight	height
 
 :Tex2D
 # TexFileName	source	[size, ignored source=map]	[TextureMode, CombineModes and SavedResult]

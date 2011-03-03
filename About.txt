@@ -13,3 +13,7 @@ This example of the bakery's use is in main.py. It loads one of the bakery folde
 One of the current major limitations is the lack of a good noise source. This will be addressed by allowing another type of input, premade textures, rather than only generated maps. Some way of loading 1D and 3D textures may also be added as well. (2D textures added now)
 
 Another major issue is the error handling of shader errors. The line numbers between the files you edit, and the shaders loaded (and thus reported line numbers) are quite different. To aid in debugging for now, the full shaders are written to the ShadersOut folder, though it may not be clear which shader causes the errors, it should help.
+
+Misc nodes:
+Shader generator effects for vshader out values (position, colors, normals, uvs etc) can be used in geoClip,
+and in bakery to bake yertex peoperties to textures which will convert to vertex data arrays for backed mesh placement

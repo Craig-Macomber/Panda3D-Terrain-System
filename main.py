@@ -1,7 +1,7 @@
 from panda3d.core import *
 
 loadPrcFile("TerrainConfig.prc")
-loadPrcFileData("", "basic-shaders-only #f")
+#loadPrcFileData("", "basic-shaders-only #f")
 
 
 from direct.showbase.ShowBase import ShowBase
@@ -16,6 +16,7 @@ from sys import exit
 
 from bakery import *
 from renderer import *
+import water
 
 print PandaSystem.getVersionString()
 backBinName="background"
@@ -23,9 +24,16 @@ backBinName="background"
 """This is a test/demo of the terrain system."""
 
 ############## Select a renderer! ##############
-renderer=GeoClipMapper
-#renderer=RenderAutoTiler
+#renderer=GeoClipMapper
+renderer=RenderAutoTiler
 ############## Select a renderer! ##############
+
+# Init camera
+base.disableMouse()
+camLens=base.camLens
+camLens.setNear(1)
+camLens.setFar(800000)
+base.cam.node().setLens(camLens)
 
 
 tileSize=.1
@@ -33,14 +41,13 @@ terrainScale=100
 
 focus=NodePath("tilerFocuse")
 
-
-
-
 if renderer is GeoClipMapper:
     # Create a bakery that uses the "bakery2" folder for its resources
     b=LiveBakery(None,"bakery2")
     n=GeoClipMapper('render',b,.02,focus)
+    waterNode = water.WaterNode( -10, -10, 20, 20, .01)
 else:
+    waterNode = water.WaterNode( -100, -100, 200, 200, 1.3)
     # Create a bakery that uses the "bakery2" folder for its resources
     b=LiveBakery(None,"bakeryTiler")
     #Make the main (highest LOD) tiler
@@ -88,6 +95,8 @@ n.setScale(terrainScale)
 
 
 base.setBackgroundColor(.3,.3,.8,0)
+
+
 
 
 
@@ -141,7 +150,7 @@ w=UI()
 dlight = DirectionalLight('dlight')
 dlight.setColor(VBase4(0.9, 0.9, 0.8, 1))
 dlnp = render.attachNewNode(dlight)
-dlnp.setHpr(0, 0, 0)
+dlnp.setHpr(0, -30, 0)
 render.setLight(dlnp)
 
 alight = AmbientLight('alight')
@@ -151,20 +160,23 @@ render.setLight(alnp)
 
 
 dayCycle=dlnp.hprInterval(20.0,Point3(0,360,0))
-dayCycle.loop()
+#dayCycle.loop()
 
+        # skybox
+skybox = loader.loadModel('models/skybox.egg')
+#         # make big enough to cover whole terrain, else there'll be problems with the water reflections
+skybox.setScale(5000)
+skybox.setBin('background', 1)
+skybox.setDepthWrite(0)
+skybox.setLightOff()
+skybox.reparentTo(render)
 
 # Filter to display the glow map's glow via bloom.
 filters = CommonFilters(base.win, base.cam)
-filterok = filters.setBloom(blend=(0,0,0,1), desat=0.5, intensity=2.5, size="small",mintrigger=0.0, maxtrigger=1.0)
+#filterok = filters.setBloom(blend=(0,0,0,1), desat=0.5, intensity=2.5, size="small",mintrigger=0.0, maxtrigger=1.0)
 
 
-# Init camera
-base.disableMouse()
-camLens=base.camLens
-camLens.setNear(1)
-camLens.setFar(200000)
-base.cam.node().setLens(camLens)
+
 
 font = TextNode.getDefaultFont()
 
@@ -283,8 +295,13 @@ class World(keyTracker):
         # Get the time elapsed since last frame. We need this
         # for framerate-independent movement.
         elapsed = globalClock.getDt()
+        waterNode.setShaderInput('time', task.time)
+        # move the skybox with the camera
+        campos = base.camera.getPos()
+        skybox.setPos(campos)
+        waterNode.update()
         
-
+        
         turnRightAmount=self.keyMap["turnRight"]-self.keyMap["turnLeft"]
         turnUpAmmount=self.keyMap["turnUp"]-self.keyMap["turnDown"]
         

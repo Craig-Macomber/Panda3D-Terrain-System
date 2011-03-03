@@ -4,7 +4,7 @@
 # A list of maps used to render terrain.
 #color
 #gloss
-height
+baseHeight
 city
 #city2
 alpha
