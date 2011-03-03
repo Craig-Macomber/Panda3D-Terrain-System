@@ -42,8 +42,8 @@ focus=NodePath("tilerFocuse")
 
 if renderer is GeoClipMapper:
     # Create a bakery that uses the "bakery2" folder for its resources
-    b=bakery.gpuBakery.GpuBakery(None,"bakery2")
-    n=GeoClipMapper('render',b,.02,focus)
+    b=bakery.gpuBakery.GpuBakery(None,"bakeryData")
+    n=GeoClipMapper('renderData',b,.02,focus)
     waterNode = water.WaterNode( -10, -10, 20, 20, .01)
 else:
     waterNode = water.WaterNode( -100, -100, 200, 200, 1.3)
