@@ -13,6 +13,8 @@ from direct.gui.OnscreenText import OnscreenText
 from direct.actor.Actor import Actor
 from sys import exit
 
+
+import bakery.animate_dreams_bakery
 import bakery.gpuBakery
 from renderer.renderTiler import RenderAutoTiler
 from renderer.geoClipMapper import GeoClipMapper
@@ -26,6 +28,8 @@ backBinName="background"
 ############## Select a renderer! ##############
 #rendererClass=GeoClipMapper
 rendererClass=RenderAutoTiler
+bakery = bakery.animate_dreams_bakery.ADBakery
+#bakery = bakery.gpuBakery.GpuBakery
 ############## Select a renderer! ##############
 
 # Init camera
@@ -49,7 +53,7 @@ if rendererClass is GeoClipMapper:
 else:
     waterNode = water.WaterNode( -100, -100, 200, 200, 1.3)
     # Create a bakery that uses the "bakery2" folder for its resources
-    b=bakery.gpuBakery.GpuBakery(None,"bakeryTiler")
+    b = bakery(None,"bakeryTiler")
     #Make the main (highest LOD) tiler
     n=RenderAutoTiler('renderTiler',b,tileSize,focus,3.0,4.0)
     useLowLOD=False
