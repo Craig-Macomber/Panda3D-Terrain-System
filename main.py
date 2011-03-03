@@ -15,7 +15,7 @@ from sys import exit
 
 import bakery.gpuBakery
 from renderer.renderTiler import RenderAutoTiler
-import renderer.geoClipMapper
+from renderer.geoClipMapper import GeoClipMapper
 import water
 
 print PandaSystem.getVersionString()
@@ -24,7 +24,7 @@ backBinName="background"
 """This is a test/demo of the terrain system."""
 
 ############## Select a renderer! ##############
-#rendererClass=renderer.geoClipMapper.GeoClipMapper
+#rendererClass=GeoClipMapper
 rendererClass=RenderAutoTiler
 ############## Select a renderer! ##############
 
@@ -41,10 +41,10 @@ terrainScale=100
 
 focus=NodePath("tilerFocuse")
 
-if rendererClass is renderer.geoClipMapper.GeoClipMapper:
+if rendererClass is GeoClipMapper:
     # Create a bakery that uses the "bakery2" folder for its resources
     b=bakery.gpuBakery.GpuBakery(None,"bakeryData")
-    n=renderer.geoClipMapper.GeoClipMapper('renderData',b,.02,focus)
+    n=GeoClipMapper('renderData',b,.02,focus)
     waterNode = water.WaterNode( -10, -10, 20, 20, .01)
 else:
     waterNode = water.WaterNode( -100, -100, 200, 200, 1.3)
@@ -116,6 +116,7 @@ class UI(DirectObject):
         base.bufferViewer.setCardSize(.25, 0.0)
         
     def save(self):
+        if rendererClass is GeoClipMapper: return
         i=0
         for t in n.getTiles():
             t.bakedTile.saveMaps("pics/map_"+str(i)+"_")
@@ -125,7 +126,7 @@ class UI(DirectObject):
         print ""
         render.analyze()
         print ""
-        if renderer is GeoClipMapper: return
+        if rendererClass is GeoClipMapper: return
         print n.tilesMade," Tiles Made for high LOD"
         print len(n.getTiles()), " Tiles displaying for high LOD"
         
@@ -137,7 +138,7 @@ class UI(DirectObject):
             print len(bg2.getTiles()), " Tiles displaying for low LOD"
         
     def color(self):
-        if renderer is GeoClipMapper: return
+        if rendererClass is GeoClipMapper: return
         if useMidLOD:
             if bg1.hasColor():
                 bg1.clearColor()
@@ -235,6 +236,8 @@ class World(keyTracker):
         self.inst3 = addInstructions(0.70, "V toggles buffer viewer")
         self.inst3 = addInstructions(0.65, "U toggles oobe")
         self.inst3 = addInstructions(0.60, "Y toggles oobeCull")
+        self.inst3 = addInstructions(0.55, "O toggles Wireframe")
+        self.inst3 = addInstructions(0.50, "P dumps rendered maps to disk")
         
         # Create the main character, Ralph
 
