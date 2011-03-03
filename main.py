@@ -14,7 +14,8 @@ from direct.actor.Actor import Actor
 from sys import exit
 
 import bakery.gpuBakery
-from renderer import RenderAutoTiler, GeoClipMapper
+from renderer.renderTiler import RenderAutoTiler
+import renderer.geoClipMapper
 import water
 
 print PandaSystem.getVersionString()
@@ -23,8 +24,8 @@ backBinName="background"
 """This is a test/demo of the terrain system."""
 
 ############## Select a renderer! ##############
-#renderer=GeoClipMapper
-renderer=RenderAutoTiler
+#rendererClass=renderer.geoClipMapper.GeoClipMapper
+rendererClass=RenderAutoTiler
 ############## Select a renderer! ##############
 
 # Init camera
@@ -40,10 +41,10 @@ terrainScale=100
 
 focus=NodePath("tilerFocuse")
 
-if renderer is GeoClipMapper:
+if rendererClass is renderer.geoClipMapper.GeoClipMapper:
     # Create a bakery that uses the "bakery2" folder for its resources
     b=bakery.gpuBakery.GpuBakery(None,"bakeryData")
-    n=GeoClipMapper('renderData',b,.02,focus)
+    n=renderer.geoClipMapper.GeoClipMapper('renderData',b,.02,focus)
     waterNode = water.WaterNode( -10, -10, 20, 20, .01)
 else:
     waterNode = water.WaterNode( -100, -100, 200, 200, 1.3)
