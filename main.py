@@ -1,7 +1,6 @@
 from panda3d.core import *
 
 loadPrcFile("TerrainConfig.prc")
-#loadPrcFileData("", "basic-shaders-only #f")
 
 
 from direct.showbase.ShowBase import ShowBase
@@ -14,8 +13,8 @@ from direct.gui.OnscreenText import OnscreenText
 from direct.actor.Actor import Actor
 from sys import exit
 
-from bakery.bakery import *
-from renderer import *
+import bakery.gpuBakery
+from renderer import RenderAutoTiler, GeoClipMapper
 import water
 
 print PandaSystem.getVersionString()
@@ -43,13 +42,13 @@ focus=NodePath("tilerFocuse")
 
 if renderer is GeoClipMapper:
     # Create a bakery that uses the "bakery2" folder for its resources
-    b=LiveBakery(None,"bakery2")
+    b=bakery.gpuBakery.GpuBakery(None,"bakery2")
     n=GeoClipMapper('render',b,.02,focus)
     waterNode = water.WaterNode( -10, -10, 20, 20, .01)
 else:
     waterNode = water.WaterNode( -100, -100, 200, 200, 1.3)
     # Create a bakery that uses the "bakery2" folder for its resources
-    b=LiveBakery(None,"bakeryTiler")
+    b=bakery.gpuBakery.GpuBakery(None,"bakeryTiler")
     #Make the main (highest LOD) tiler
     n=RenderAutoTiler('renderTiler',b,tileSize,focus,3.0,4.0)
     useLowLOD=False
