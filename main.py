@@ -14,7 +14,7 @@ from direct.gui.OnscreenText import OnscreenText
 from direct.actor.Actor import Actor
 from sys import exit
 
-from bakery import *
+from bakery.bakery import *
 from renderer import *
 import water
 

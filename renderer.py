@@ -3,7 +3,7 @@ import direct.directbase.DirectStart
 from pandac.PandaModules import *
 #from panda3d.core import GeoMipTerrain, NodePath, TextureStage, Vec3, PNMImage
 
-from bakery import Tile, parseFile, loadTex, tileMapSize
+from bakery.bakery import Tile, parseFile, loadTex, tileMapSize
 import math
 
 """
