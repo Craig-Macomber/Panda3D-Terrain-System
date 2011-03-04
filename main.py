@@ -55,7 +55,7 @@ else:
     # Create a bakery that uses the "bakery2" folder for its resources
     b = bakery(None,"bakeryTiler")
     #Make the main (highest LOD) tiler
-    n=RenderAutoTiler('renderTiler',b,tileSize,focus,3.0,4.0)
+    n=RenderAutoTiler('renderTiler',b,tileSize,focus,1.0,4.0)
     useLowLOD=False
     useMidLOD=False
     

@@ -37,7 +37,8 @@ class ADBakery(Bakery):
         """
         returns a tile for the specified positions and size
         """
-        return _TerrainTile(self.terrain, xStart, yStart, scale)
+        t=_TerrainTile(self.terrain, xStart, yStart, scale)
+        return Tile(t.renderMaps,[], t.x, t.y, t.scale)
 
     def asyncGetTile(self, xStart, yStart, scale, callback, callbackParams=[]):
         """
@@ -63,9 +64,6 @@ class _TerrainTile():
         self.heightTex = Texture()
         self.heightTex.load(self.image)
         self.renderMaps["height"] = Map("height", self.heightTex)
-        self.renderMaps["alpha"] = None
-        self.renderMaps["city"] = None
-        self.renderMaps["baseHeight"] = None
 
     #@pstat
     def makeHeightMap(self):
@@ -78,10 +76,10 @@ class _TerrainTile():
         """
 
         self.image = PNMImage(tileMapSize, tileMapSize)
-        self.image.makeGrayscale()
+        #self.image.makeGrayscale()
         # these may be redundant
-        self.image.setNumChannels(1)
-        self.image.setMaxval(65535)
+        self.image.setNumChannels(3)
+        self.image.setMaxval(255)
 
         #        max = -9999.0
         #        min = 9999.0
@@ -103,8 +101,16 @@ class _TerrainTile():
 
         ySize = self.image.getYSize()
         getHeight = self.terrain.getHeight
-        setHeight = self.image.setGray
-
+        #setHeight = self.image.setGray
+        def setHeight(x,y,h):
+            #hh=int(h*256*256)
+            r=h*256
+            g=r*256
+            b=g*256
+            self.image.setRedVal(x,y,r%256)
+            self.image.setGreenVal(x,y,g%256)
+            self.image.setBlueVal(x,y,b%256)
+        
         for x in range(self.image.getXSize()):
             for y in range(ySize):
                 height = getHeight(x + self.x, y + self.y)
