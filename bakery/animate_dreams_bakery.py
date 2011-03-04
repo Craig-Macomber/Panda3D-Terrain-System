@@ -37,8 +37,28 @@ class ADBakery(Bakery):
         """
         returns a tile for the specified positions and size
         """
-        t=_TerrainTile(self.terrain, xStart, yStart, scale)
-        return Tile(t.renderMaps,[], t.x, t.y, t.scale)
+        sizeY = tileMapSize
+        sizeX = tileMapSize
+        getHeight = self.terrain.getHeight
+        
+        noiseTex=Texture("NoiseTex")
+        noiseTex.setup2dTexture(sizeX, sizeY, Texture.TUnsignedByte, Texture.FRgb)
+        p=noiseTex.modifyRamImage()
+        step=noiseTex.getNumComponents()*noiseTex.getComponentWidth()
+        scalar=1000.0
+        for y in range(sizeY):
+            yPos=scalar*(1.0*y*scale/(sizeY-1)+yStart)
+            for x in range(sizeX):
+                height = getHeight(scalar*(1.0*x*scale/(sizeX-1) + xStart), yPos)
+                r=min(255,max(0,height*256))
+                g=r*256
+                b=g*256
+                index = (sizeX * y + x)*step
+                p.setElement(index, b%256)#Blue
+                p.setElement(index+1, g%256)#Green
+                p.setElement(index+2, r)#Red
+        
+        return Tile({"height":Map("height", noiseTex)},[], xStart, yStart, scale)
 
     def asyncGetTile(self, xStart, yStart, scale, callback, callbackParams=[]):
         """
@@ -46,84 +66,6 @@ class ADBakery(Bakery):
         """
         callback(self.getTile(xStart, yStart, scale), *callbackParams)
 
-
-class _TerrainTile():
-
-    def __init__(self, terrain, x, y, scale):
-
-        self.x = x
-        self.y = y
-        self.scale = scale
-        self.renderMaps = dict()
-        self.placedMesh = []
-
-        self.image = PNMImage()
-        self.terrain = terrain
-
-        self.makeHeightMap()
-        self.heightTex = Texture()
-        self.heightTex.load(self.image)
-        self.renderMaps["height"] = Map("height", self.heightTex)
-
-    #@pstat
-    def makeHeightMap(self):
-        """Generate a new heightmap image.
-
-        Panda3d GeoMipMaps require an image from which to build and update
-        their height field. This function creates the correct image using the
-        tile's position and the Terrain's getHeight() function
-
-        """
-
-        self.image = PNMImage(tileMapSize, tileMapSize)
-        #self.image.makeGrayscale()
-        # these may be redundant
-        self.image.setNumChannels(3)
-        self.image.setMaxval(255)
-
-        #        max = -9999.0
-        #        min = 9999.0
-        #        height = 0
-
-        # return the minimum and maximum, useful to normalize the heightmap
-        #        for x in range(self.xOffset, self.xOffset + self.image.getXSize()):
-        #            for y in range(self.yOffset, self.yOffset + self.image.getYSize()):
-        #                height = self.terrain.getHeight(x, y)
-        #                if height < min:
-        #                    min = height
-        #                if height > max:
-        #                    max = height
-
-        #normalMax = -9999.0
-        #normalMax = 9999.0
-
-        #print "generating heightmap for offsets: ",self.xOffset,self.yOffset
-
-        ySize = self.image.getYSize()
-        getHeight = self.terrain.getHeight
-        #setHeight = self.image.setGray
-        def setHeight(x,y,h):
-            #hh=int(h*256*256)
-            r=h*256
-            g=r*256
-            b=g*256
-            self.image.setRedVal(x,y,r%256)
-            self.image.setGreenVal(x,y,g%256)
-            self.image.setBlueVal(x,y,b%256)
-        
-        for x in range(self.image.getXSize()):
-            for y in range(ySize):
-                height = getHeight(x + self.x, y + self.y)
-                #  feed pixel into image
-                setHeight(x, ySize-1-y, height)
-                #setHeight(x, y, height)
-        #self.postProcessImage()
-        #self.image.write(Filename(self.mapName))
-
-    def saveMaps(self, path):
-        for map in self.renderMaps:
-            m = self.renderMaps[map]
-            m.tex.write(path + m.name + ".png")
 
 ###############################################################################
 #   Terrain
