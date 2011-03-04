@@ -1,32 +1,7 @@
 # All lists in this file start with a map name
-# Some sections may allow addational paramaters after a tab.
+# Some sections may allow additional parameters after a tab.
 :Special
 # A list of maps that have special uses.
 # Currently the only special use is height.
 # MapName   SpecialUse
-baseHeight	height
-
-:Tex2D
-# TexFileName	source	[size, ignored source=map]	[TextureMode, CombineModes and SavedResult]
-# Ordered by tex sort order. First drawn is fist in the list
-# modulate is the default mode.
-# see http://www.panda3d.org/wiki/index.php/Texture_Modes
-# and http://www.panda3d.org/apiref.php?page=TextureStage
-# and http://www.panda3d.org/wiki/index.php/Texture_Combine_Modes
-
-alpha	map	MReplace	Save
-grass	file	.011	MReplace
-Xwater	file	.23	CMInterpolate	CSTexture	COSrcColor	CSPrevious	COSrcColor	CSLastSavedResult	COSrcColor
-ice	file	.21	Save	CMInterpolate	CSTexture	COSrcColor	CSPrevious	COSrcColor	CSLastSavedResult	COSrcAlpha
-#city	map	CMReplace	CSTexture	COSrcAlpha
-
-#XcityTex	file	.01	CMInterpolate	CSTexture	COSrcColor	CSLastSavedResult	COSrcColor	CSPrevious	COSrcAlpha	
-
-
-
-
-# With a dummy texture, apply the origional color which includes lighting.
-Xwater	file	1	CMModulate	CSPrevious	COSrcColor	CSPrimaryColor	COSrcColor
-
-#gloss	map	MGloss
-city	map	MGlow
+height	height

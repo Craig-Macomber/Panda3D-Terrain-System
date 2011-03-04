@@ -14,7 +14,7 @@ from panda3d.core import StackedPerlinNoise2
 from textureRenderer import *
 
 # Size Map textures are rendered
-tileMapSize = 256
+tileMapSize = 257
 
 class ADBakery(Bakery):
 
@@ -103,14 +103,14 @@ class _TerrainTile():
 
         ySize = self.image.getYSize()
         getHeight = self.terrain.getHeight
-        setGray = self.image.setGray
+        setHeight = self.image.setGray
 
         for x in range(self.image.getXSize()):
             for y in range(ySize):
                 height = getHeight(x + self.x, y + self.y)
                 #  feed pixel into image
-                # why is it necessary to invert the y axis I wonder?
-                setGray(x, ySize-1-y, height)
+                setHeight(x, ySize-1-y, height)
+                #setHeight(x, y, height)
         #self.postProcessImage()
         #self.image.write(Filename(self.mapName))
 
