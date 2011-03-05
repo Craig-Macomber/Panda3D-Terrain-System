@@ -1,7 +1,4 @@
-# All lists in this file start with a map name
-# Some sections may allow additional parameters after a tab.
 :Special
-# A list of maps that have special uses.
-# Currently the only special use is height.
-# MapName   SpecialUse
 height	height
+:Tex2D
+grass	file	.011	MModulate
