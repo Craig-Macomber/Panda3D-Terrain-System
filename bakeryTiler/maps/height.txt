@@ -2,14 +2,31 @@
 resolutionScale .25
 addPixels 1
 
-:Input
-baseHeight
+:Tex2D
+smoothNoise
 
 :Shader
-float h=(unpackFloat(map_baseHeight.xyz)-.1);
-if (h<0){
-return float4(0,0,0,1);
-}else{
-//return float4(h,map_baseHeight.y,map_baseHeight.z,1);
-return float4(packFloat(h),1);
+float v=0;
+float scaler=2.1;
+float startScale=.08;
+float persistance=.48;
+float totalScale=0;
+
+float multNoiseScale=1/2.725;
+float roughnessScaler=.8;
+int i;
+for (i = 1; i <= 8; i++){
+  float s=tex2D(tex2D_smoothNoise,pos*startScale*pow(scaler,i)).x*2-1;
+  float r=tex2D(tex2D_smoothNoise,pos*startScale*pow(scaler,i)*multNoiseScale).x*2-1;
+  roughnessScaler*=(r*.9+persistance);
+  s=s*roughnessScaler*(r*.5+.5);
+  v=v+s;
+  totalScale=totalScale+pow(persistance,i);
 }
+
+
+v=v/totalScale;
+
+float h=v*.9+.1;
+
+return float4(packFloat(h),1);

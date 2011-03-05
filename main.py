@@ -28,8 +28,8 @@ backBinName="background"
 ############## Select a renderer! ##############
 #rendererClass=GeoClipMapper
 rendererClass=RenderAutoTiler
-bakery = bakery.animate_dreams_bakery.ADBakery
-#bakery = bakery.gpuBakery.GpuBakery
+#bakery = bakery.animate_dreams_bakery.ADBakery
+bakery = bakery.gpuBakery.GpuBakery
 ############## Select a renderer! ##############
 
 # Init camera

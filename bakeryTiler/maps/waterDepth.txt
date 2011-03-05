@@ -1,5 +1,5 @@
 :Input
-baseHeight
+height
 
 :Shader
-return float4(max(0,-10.0*(map_baseHeight.x-.1)),0,0,1);
+return float4(max(0,-10.0*(map_height.x-.1)),0,0,1);
