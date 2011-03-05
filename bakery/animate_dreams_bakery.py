@@ -1,6 +1,6 @@
 import math
 
-from direct.showbase.RandomNumGen import *
+from direct.showbase.RandomNumGen import RandomNumGen
 from panda3d.core import Texture, TimeVal, PerlinNoise2, StackedPerlinNoise2
 
 from bakery import Bakery, Map, Tile
