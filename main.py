@@ -32,6 +32,9 @@ rendererClass=RenderAutoTiler
 bakery = bakery.gpuBakery.GpuBakery
 ############## Select a renderer! ##############
 
+enableMeshes=True
+
+
 # Init camera
 base.disableMouse()
 camLens=base.camLens
@@ -100,10 +103,6 @@ n.setScale(terrainScale)
 
 base.setBackgroundColor(.3,.3,.8,0)
 
-
-
-
-
 # Make a little UI input handeling class
 class UI(DirectObject):
     def __init__(self):
@@ -148,24 +147,66 @@ class UI(DirectObject):
                 bg1.clearColor()
             else:
                 bg1.setColor(1,.5,.5)
-w=UI()
+ui=UI()
 
 
 # Setup some lights
+# dlight = DirectionalLight('dlight')
+# dlight.setColor(VBase4(0.9, 0.9, 0.8, 1))
+# dlnp = render.attachNewNode(dlight)
+# dlnp.setHpr(0, -30, 0)
+# render.setLight(dlnp)
+# 
+# alight = AmbientLight('alight')
+# alight.setColor(VBase4(0.2, 0.2, 0.4, 1))
+# alnp = render.attachNewNode(alight)
+# render.setLight(alnp)
+# 
+# 
+# dayCycle=dlnp.hprInterval(20.0,Point3(0,360,0))
+#dayCycle.loop()
+
+
 dlight = DirectionalLight('dlight')
-dlight.setColor(VBase4(0.9, 0.9, 0.8, 1))
+
 dlnp = render.attachNewNode(dlight)
-dlnp.setHpr(0, -30, 0)
+dlnp.setHpr(0, 0, 0)
 render.setLight(dlnp)
 
 alight = AmbientLight('alight')
-alight.setColor(VBase4(0.2, 0.2, 0.4, 1))
+
 alnp = render.attachNewNode(alight)
 render.setLight(alnp)
 
+#rotating light to show that normals are calculated correctly
+def updateLight(task):    
+    h=task.time/30.0*360+180
+    
+    dlnp.setHpr(0,h,0)
+    h=h+90
+    h=h%360
+    h=min(h,360-h)
+    #h is now angle from straight up
+    hv=h/180.0
+    hv=1-hv
+    sunset=max(0,1.0-abs(hv-.5)*8)
+    sunset=min(1,sunset)
+    if hv>.5: sunset=1
+    #sunset=sunset**.2
+    sunset=VBase4(0.8, 0.5, 0.0, 1)*sunset
+    sun=max(0,hv-.5)*2*4
+    sun=min(sun,1)
+    dColor=(VBase4(0.8, 0.7, 0.7, 1)*sun*2+sunset)
+    dlight.setColor(dColor)
+    aColor=VBase4(0.1, 0.3, 0.8, 1)*sun*2.6+VBase4(0.2, 0.2, 0.3, 1)*2.0
+    alight.setColor(aColor*(5-dColor.length())*(1.0/5))
+    return Task.cont    
 
-dayCycle=dlnp.hprInterval(20.0,Point3(0,360,0))
-#dayCycle.loop()
+taskMgr.add(updateLight, "rotating Light")
+
+
+
+
 
         # skybox
 skybox = loader.loadModel('models/skybox.egg')
@@ -297,6 +338,24 @@ class World(keyTracker):
         self.floater.setZ(6)
         self.floater.setY(-1)
         
+        
+        if enableMeshes:
+            import meshManager.meshManager
+            import meshManager.treeFactory
+            import meshManager.fernFactory
+            #scalar=1.0/terrainScale
+            class HeightTranslator(object):
+                def height(selfx,x,y):
+                    h=n.height(x,y)
+                    return h
+            ht=n#HeightTranslator()
+            factories=[meshManager.treeFactory.TreeFactory(ht),meshManager.fernFactory.FernFactory(ht)]
+            self.theMeshManager=meshManager.meshManager.MeshManager(factories)
+            self.theMeshManager.reparentTo(n)
+            self.theMeshManager.setScale(1.0)
+        
+
+        
     def move(self, task):
 
         # Get the time elapsed since last frame. We need this
@@ -389,7 +448,9 @@ class World(keyTracker):
         base.camera.setPos(self.floater,0,0,0)
         base.camera.setPos(base.camera,0,-self.camDist,0)
         
-
+        if enableMeshes:
+            self.theMeshManager.update(self.ralph)
+            
         return Task.cont
 
 
