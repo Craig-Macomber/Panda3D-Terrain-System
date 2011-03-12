@@ -26,13 +26,16 @@ backBinName="background"
 """This is a test/demo of the terrain system."""
 
 ############## Configure! ##############
-#rendererClass=GeoClipMapper
-rendererClass=RenderAutoTiler
+rendererClass=GeoClipMapper
+#rendererClass=RenderAutoTiler
 if rendererClass==RenderAutoTiler:
     #selectedBakery = bakery.animate_dreams_bakery.ADBakery ; rendererFolder='renderTilerSimple'
     selectedBakery = bakery.gpuBakery.GpuBakery ; rendererFolder='renderTiler'
+    useLowLOD=False
+    useMidLOD=False
 enableMeshes=True
 mouseControl=False
+enableWater=True
 ############## Configure! ##############
 
 
@@ -42,28 +45,31 @@ mouseControl=False
 base.disableMouse()
 camLens=base.camLens
 camLens.setNear(1)
-camLens.setFar(800000)
+
+maxDist=10000
+
+camLens.setFar(maxDist*20)
 base.cam.node().setLens(camLens)
 
 
-tileSize=.1
-terrainScale=100
+tileSize=400.0
+terrainScale=1.0
 
 focus=NodePath("tilerFocuse")
 
 if rendererClass is GeoClipMapper:
     # Create a bakery that uses the "bakery2" folder for its resources
     b=bakery.gpuBakery.GpuBakery(None,"bakeryData")
-    n=GeoClipMapper('renderData',b,.02,focus)
-    waterNode = water.WaterNode( -10, -10, 20, 20, .01)
+    n=GeoClipMapper('renderData',b,tileSize/4.0,focus)
+    if enableWater: waterNode = water.WaterNode( -10, -10, 20, 20, .01)
 else:
-    waterNode = water.WaterNode( -100, -100, 200, 200, 1.3)
+    
     # Create a bakery that uses the "bakeryTiler" folder for its resources
     b = selectedBakery(None,"bakeryTiler")
     #Make the main (highest LOD) tiler
-    n=RenderAutoTiler(rendererFolder,b,tileSize,focus,1.0,4.0)
-    useLowLOD=False
-    useMidLOD=False
+    n=RenderAutoTiler(rendererFolder,b,tileSize,focus,2.5,2.8)
+    if enableWater: waterNode = water.WaterNode( -100, -100, 200, 200, 0.1*n.heightScale)
+    
     
     if useLowLOD or useMidLOD:
         # Setup a card maker for depth reset cards for between LOD draws
@@ -71,7 +77,7 @@ else:
         cm.setFrameFullscreenQuad()
         
         # Make node to hold depth reset cards
-        dist=100000
+        dist=maxDist*3.0
         clearCardHolder=NodePath('clearCardHolder')
         clearCardHolder.reparentTo(base.camera)
         clearCardHolder.setDepthTest(False)
@@ -150,6 +156,11 @@ class UI(DirectObject):
                 bg1.clearColor()
             else:
                 bg1.setColor(1,.5,.5)
+        if useLowLOD:
+            if bg2.hasColor():
+                bg2.clearColor()
+            else:
+                bg2.setColor(.3,.3,2)
 ui=UI()
 
 
@@ -201,8 +212,8 @@ def updateLight(task):
     sun=min(sun,1)
     dColor=(VBase4(0.8, 0.7, 0.7, 1)*sun*2+sunset)
     dlight.setColor(dColor)
-    aColor=VBase4(0.1, 0.3, 0.8, 1)*sun*2.6+VBase4(0.2, 0.2, 0.3, 1)*2.0
-    alight.setColor(aColor*(5-dColor.length())*(1.0/5))
+    aColor=VBase4(0.3, 0.3, 0.8, 1)*sun*2.6+VBase4(0.2, 0.2, 0.4, 1)*2.0
+    alight.setColor(aColor*(8-dColor.length())*(1.0/8))
     return Task.cont    
 
 taskMgr.add(updateLight, "rotating Light")
@@ -214,7 +225,7 @@ taskMgr.add(updateLight, "rotating Light")
         # skybox
 skybox = loader.loadModel('models/skybox.egg')
 #         # make big enough to cover whole terrain, else there'll be problems with the water reflections
-skybox.setScale(5000)
+skybox.setScale(maxDist*3)
 skybox.setBin('background', 1)
 skybox.setDepthWrite(0)
 skybox.setLightOff()
@@ -291,7 +302,7 @@ class World(keyTracker):
         ralphStartPos = Vec3(0,0,0)
         self.ralph = Actor("models/ralph",{"run":"models/ralph-run"})
         self.ralph.reparentTo(render)
-        self.ralph.setScale(.02)
+        self.ralph.setScale(.4)
         self.ralph.setPos(ralphStartPos)
         self.ralph.setShaderAuto()
         
@@ -352,9 +363,9 @@ class World(keyTracker):
                     return h
             ht=n#HeightTranslator()
             factories=[meshManager.treeFactory.TreeFactory(ht),meshManager.fernFactory.FernFactory(ht)]
-            self.theMeshManager=meshManager.meshManager.MeshManager(factories)
-            self.theMeshManager.reparentTo(n)
-            self.theMeshManager.setScale(1.0)
+            self.meshManager=meshManager.meshManager.MeshManager(factories)
+            self.meshManager.reparentTo(n)
+            self.meshManager.setScale(1.0)
         
 
         
@@ -363,11 +374,11 @@ class World(keyTracker):
         # Get the time elapsed since last frame. We need this
         # for framerate-independent movement.
         elapsed = globalClock.getDt()
-        waterNode.setShaderInput('time', task.time)
+        if enableWater: waterNode.setShaderInput('time', task.time)
         # move the skybox with the camera
         campos = base.camera.getPos()
         skybox.setPos(campos)
-        waterNode.update()
+        if enableWater: waterNode.update()
         
         
         turnRightAmount=self.keyMap["turnRight"]-self.keyMap["turnLeft"]
@@ -391,7 +402,7 @@ class World(keyTracker):
             turnUpAmmount-= 0.2 * deltaY 
             
         zoomOut=self.keyMap["zoom"]
-        self.camDist=max(min(60000,self.camDist+zoomOut*elapsed*50+zoomOut*self.camDist*elapsed*.5),.5)
+        self.camDist=max(min(maxDist,self.camDist+zoomOut*elapsed*50+zoomOut*self.camDist*elapsed*.5),.5)
         self.keyMap["zoom"]*=2.7**(-elapsed*4)# Smooth fade out of zoom speed
         
         
@@ -451,7 +462,7 @@ class World(keyTracker):
         base.camera.setPos(base.camera,0,-self.camDist,0)
         
         if enableMeshes:
-            self.theMeshManager.update(self.ralph)
+            self.meshManager.update(self.ralph)
             
         return Task.cont
 

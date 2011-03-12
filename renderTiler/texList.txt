@@ -15,9 +15,9 @@ height	height
 # and http://www.panda3d.org/wiki/index.php/Texture_Combine_Modes
 
 alpha	map	MReplace	Save
-grass	file	.011	MReplace
-Xwater	file	.23	CMInterpolate	CSTexture	COSrcColor	CSPrevious	COSrcColor	CSLastSavedResult	COSrcColor
-ice	file	.21	Save	CMInterpolate	CSTexture	COSrcColor	CSPrevious	COSrcColor	CSLastSavedResult	COSrcAlpha
+grass	file	50.0	MReplace
+Xwater	file	23.0	CMInterpolate	CSTexture	COSrcColor	CSPrevious	COSrcColor	CSLastSavedResult	COSrcColor
+ice	file	210.0	Save	CMInterpolate	CSTexture	COSrcColor	CSPrevious	COSrcColor	CSLastSavedResult	COSrcAlpha
 #city	map	CMReplace	CSTexture	COSrcAlpha
 
 #XcityTex	file	.01	CMInterpolate	CSTexture	COSrcColor	CSLastSavedResult	COSrcColor	CSPrevious	COSrcAlpha	

@@ -1,9 +1,5 @@
+import math
 import meshManager
-
-from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat, GeomTristrips, GeomTriangles
-from panda3d.core import Vec3, Quat
-
-import math, random
 
 class GridFactory(meshManager.MeshFactory):
     def __init__(self,heightSource):
@@ -11,7 +7,7 @@ class GridFactory(meshManager.MeshFactory):
         
         self.heightSource=heightSource
         
-        self.scalar=.0002
+        self.scalar=1.0
         self.gridSize=10.0
         
     def draw(self,LOD,x0,y0,x1,y1,drawResourcesFactory):

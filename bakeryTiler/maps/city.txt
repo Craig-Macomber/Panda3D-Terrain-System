@@ -7,7 +7,7 @@ smoothNoise
 
 :Shader
 
-float scale=20;
+float scale=.01;
 float2 UV=pos;
 
 float2 scaledUV = UV * scale;
@@ -45,6 +45,6 @@ for (i = -1; i <= 0; i++) {
 
 float v=1.5-dist*14;
 v=pow(v,1);
-v=v+(tex2D(tex2D_smoothNoise,pos*100)-.5)*8;
+v=v+(tex2D(tex2D_smoothNoise,pos*.04)-.5)*8;
 v=max(0,v);
 return float4(0,0,0,v);

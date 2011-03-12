@@ -14,7 +14,7 @@ base.disableMouse()
 #base.cam.setPos(0, -80, 10) 
 
 class Flat():
-    def getHeight(self,x,y): return 0
+    def height(self,x,y): return 0
 
 f=Flat()
 factories=[treeFactory.TreeFactory(f),fernFactory.FernFactory(f)]

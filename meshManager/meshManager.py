@@ -1,4 +1,4 @@
-from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat, GeomTriangles
+from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat, GeomTriangles, GeomTristrips
 import math
 
 import toroidalCache
@@ -70,6 +70,73 @@ class LODLevel(toroidalCache.ToroidalCache):
         p=pos*(1.0/self.blockSize)
         self.updateCenter(p.getX(),p.getY())
 
+
+class LODTransition(object):
+    """
+    specifies when and how to transition blocks between 2 LODs (in both directions)
+    """
+    def __init__(self,mergeThreshold,splitThreshold,splitCount):
+        """
+        if all blocks under a parent are below the merge threshold, merge them
+        
+        if 
+        """
+        self.LOD=LOD
+        self.splits=splits
+        
+
+class _MinLODBlockCache(toroidalCache.ToroidalCache):
+    """
+    Blocks gets subdivided into smaller (higher LOD) ones
+    so at some point, there has to be a lowest level, and this manages it.
+    """
+    def __init__(self,meshManager,LOD,blockSize,blockCount):
+        self.meshManager=meshManager
+        self.blockSize=blockSize
+        self.LOD=LOD
+        self.blockCount=blockCount
+        
+        
+        self.geomRequirementsCollection=None
+        
+        
+        toroidalCache.ToroidalCache.__init__(self,blockCount,hysteresis=.6)
+    
+    def addBlock(self,x,y,x2,y2):
+        if self.geomRequirementsCollection is None:
+            self.geomRequirementsCollection=GeomRequirementsCollection()
+            for c in self.meshManager.factories:
+                c.regesterGeomRequirements(self.LOD,self.geomRequirementsCollection)
+        
+        drawResourcesFactory=self.geomRequirementsCollection.getDrawResourcesFactory()
+        if drawResourcesFactory is None: return None
+        
+        for c in self.meshManager.factories:
+            c.draw(self.LOD,x,y,x2,y2,drawResourcesFactory)
+        
+        
+        nodePath=drawResourcesFactory.getNodePath()
+        
+        if nodePath is None: return
+        
+        block=_MeshBlock(self.LOD,x,y,x2,y2)
+        nodePath.reparentTo(self.meshManager)
+        nodePath.setPythonTag("_MeshBlock",block)
+        return nodePath
+
+    
+    def replaceValue(self,x,y,old):
+        if old is not None:
+            old.removeNode()
+            #old.setPythonTag("_MeshBlock",None)
+        s=self.blockSize
+        return self.addBlock(x*s,y*s,(x+1)*s,(y+1)*s)
+    def update(self,pos):
+        p=pos*(1.0/self.blockSize)
+        self.updateCenter(p.getX(),p.getY())
+
+
+
     
 class MeshManager(NodePath):
     """
@@ -77,11 +144,14 @@ class MeshManager(NodePath):
     
     meshes come from passed in factories
     """
-    def __init__(self,factories):
+    def __init__(self,factories,LODTransitions=None):
         self.factories=factories
         NodePath.__init__(self,"MeshManager")
-        self.LODLevels=[LODLevel(self,1,20*.0002,7)]
-    
+        self.LODLevels=[_MinLODBlockCache(self,1,16,9)]
+        
+        self.LODTransitions=LODTransitions
+        
+        
     def update(self,focuseNode):
         pos=focuseNode.getPos(self)
         for l in self.LODLevels:
@@ -153,16 +223,24 @@ class DrawResources(object):
         self.normalWriter = GeomVertexWriter(vdata, "normal") 
         self.texcoordWriter = GeomVertexWriter(vdata, "texcoord")
         self._geomTriangles = None
+        self._geomTristrips = None
         
     def getGeomTriangles(self):
         if self._geomTriangles is None:
             self._geomTriangles = GeomTriangles(Geom.UHStatic)
         return self._geomTriangles
     
+    def getGeomTristrips(self):
+        if self._geomTristrips is None:
+            self._geomTristrips = GeomTristrips(Geom.UHStatic)
+        return self._geomTristrips
+    
     def finalize(self):
         if self._geomTriangles is not None:
             self.geom.addPrimitive(self._geomTriangles)
-    
+        if self._geomTristrips is not None:
+            self.geom.addPrimitive(self._geomTristrips)
+        
 class _DrawNodeSpec(object):
     """
     spec for what properties are needed on the

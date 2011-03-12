@@ -6,7 +6,7 @@ from panda3d.core import Texture, TimeVal, PerlinNoise2, StackedPerlinNoise2
 from bakery import Bakery, Map, Tile
 
 # Size Map textures are rendered
-tileMapSize = 257
+tileMapSize = 129
 
 class ADBakery(Bakery):
 
@@ -86,7 +86,7 @@ class ADBakery(Bakery):
         noiseTex.setup2dTexture(sizeX, sizeY, Texture.TUnsignedByte, Texture.FRgb)
         p=noiseTex.modifyRamImage()
         step=noiseTex.getNumComponents()*noiseTex.getComponentWidth()
-        scalar=1000.0
+        scalar=.4
         for y in range(sizeY):
             yPos=scalar*(1.0*y*scale/(sizeY-1)+yStart)
             for x in range(sizeX):

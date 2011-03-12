@@ -1,17 +1,16 @@
-import meshManager
-
-from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat, GeomTristrips, GeomTriangles
-from panda3d.core import Vec3, Quat
-
 import math, random
 
+from panda3d.core import Vec3, Quat, GeomVertexFormat
+
+import meshManager
 import gridFactory
+
 
 class FernFactory(gridFactory.GridFactory):
     def __init__(self,heightSource):
         gridFactory.GridFactory.__init__(self,heightSource)
-        self.scalar=.0001
-        self.gridSize=6.0
+        self.scalar=.1
+        self.gridSize=12.0
         
     def regesterGeomRequirements(self,LOD,collection):
         leafTexture = base.loader.loadTexture("meshManager/models/material-10-cl.png")
@@ -29,7 +28,6 @@ class FernFactory(gridFactory.GridFactory):
         self.drawFern(LOD,pos, quat,drawResourcesFactory)    
     
     def drawFern(self,LOD,pos,quat,drawResourcesFactory):
-        
         exists=random.random()
         if exists<.8: return
         scalar=random.random()
@@ -40,8 +38,7 @@ class FernFactory(gridFactory.GridFactory):
         leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex)
         leafTri=leafResources.getGeomTriangles()
         
-        
-        count=int((scalar**.5)*16)
+        count=int((scalar**.7)*12)
         
         scale*=self.scalar*2
         
@@ -65,44 +62,31 @@ class FernFactory(gridFactory.GridFactory):
             norm1=norm0+norm2
             norm1.normalize()
             
-            leafRow = leafResources.vertexWriter.getWriteRow()
+            for x in range(2):
+                leafRow = leafResources.vertexWriter.getWriteRow()
             
-            leafResources.vertexWriter.addData3f(pos)
-            leafResources.vertexWriter.addData3f(pos+f+r)
-            leafResources.vertexWriter.addData3f(pos+f-r)
-            leafResources.vertexWriter.addData3f(pos+f2)
+                leafResources.vertexWriter.addData3f(pos)
+                leafResources.vertexWriter.addData3f(pos+f+r)
+                leafResources.vertexWriter.addData3f(pos+f-r)
+                leafResources.vertexWriter.addData3f(pos+f2)
+                
+                leafResources.texcoordWriter.addData2f(0,0)
+                leafResources.texcoordWriter.addData2f(0,1)
+                leafResources.texcoordWriter.addData2f(1,0)
+                leafResources.texcoordWriter.addData2f(1,1)
             
-            leafResources.normalWriter.addData3f(norm0)
-            leafResources.normalWriter.addData3f(norm1) 
-            leafResources.normalWriter.addData3f(norm1) 
-            leafResources.normalWriter.addData3f(norm2)
-            
-            leafResources.texcoordWriter.addData2f(0,0)
-            leafResources.texcoordWriter.addData2f(0,1)
-            leafResources.texcoordWriter.addData2f(1,0)
-            leafResources.texcoordWriter.addData2f(1,1)
-            
-            leafTri.addVertices(leafRow,leafRow+1,leafRow+2)
-            leafTri.addVertices(leafRow+1,leafRow+3,leafRow+2)
-            
-            
-            leafRow = leafResources.vertexWriter.getWriteRow()
-            
-            leafResources.vertexWriter.addData3f(pos)
-            leafResources.vertexWriter.addData3f(pos+f+r)
-            leafResources.vertexWriter.addData3f(pos+f-r)
-            leafResources.vertexWriter.addData3f(pos+f2)
-            
-            leafResources.normalWriter.addData3f(-norm0)
-            leafResources.normalWriter.addData3f(-norm1) 
-            leafResources.normalWriter.addData3f(-norm1) 
-            leafResources.normalWriter.addData3f(-norm2)
-            
-            leafResources.texcoordWriter.addData2f(0,0)
-            leafResources.texcoordWriter.addData2f(0,1)
-            leafResources.texcoordWriter.addData2f(1,0)
-            leafResources.texcoordWriter.addData2f(1,1)
-            
-            
-            leafTri.addVertices(leafRow+1,leafRow,leafRow+2)
-            leafTri.addVertices(leafRow+3,leafRow+1,leafRow+2)
+                if x==1:
+                    # back sides
+                    norm0=-norm0
+                    norm1=-norm1
+                    norm2=-norm2
+                    leafTri.addVertices(leafRow+1,leafRow,leafRow+2)
+                    leafTri.addVertices(leafRow+3,leafRow+1,leafRow+2)
+                else:
+                    leafTri.addVertices(leafRow,leafRow+1,leafRow+2)
+                    leafTri.addVertices(leafRow+1,leafRow+3,leafRow+2)
+                    
+                leafResources.normalWriter.addData3f(norm0)
+                leafResources.normalWriter.addData3f(norm1) 
+                leafResources.normalWriter.addData3f(norm1) 
+                leafResources.normalWriter.addData3f(norm2)

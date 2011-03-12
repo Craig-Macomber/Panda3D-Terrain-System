@@ -56,7 +56,7 @@ void fshader(
     if (l_height<=0){
         o_color=float4(.1,.1,.7,0);
         }else{
-        o_color=tex2D(k_tex2D_grass,l_worldPos*50)*l_bright;//1*(tex2D(k_tex2D_grass,l_worldPos)*.5+.5)*
+        o_color=tex2D(k_tex2D_grass,l_worldPos*0.05)*l_bright;//1*(tex2D(k_tex2D_grass,l_worldPos)*.5+.5)*
         o_color.w=0;
         }
 } 

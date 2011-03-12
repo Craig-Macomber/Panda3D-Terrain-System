@@ -1,22 +1,20 @@
-import meshManager
-
-from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat, GeomTristrips, GeomTriangles
-from panda3d.core import Vec3, Quat
-
 import math, random
 
+from panda3d.core import Vec3, Quat, GeomVertexFormat
+
+import meshManager
 import gridFactory
 
+
 class TreeFactory(gridFactory.GridFactory):
+    def __init__(self,heightSource):
+        gridFactory.GridFactory.__init__(self,heightSource)
+        self.scalar=.6
+        self.gridSize=10.0
+    
+    
     def regesterGeomRequirements(self,LOD,collection):
-        """
-        collection is a GeomRequirementsCollection
-        
-        example:
-        self.trunkData=collection.add(GeomRequirements(...))
-        """
         barkTexture = base.loader.loadTexture("meshManager/models/barkTexture.jpg") 
-        # leafModel = base.loader.loadModel('models/tree/shrubbery') 
         leafTexture = base.loader.loadTexture("meshManager/models/material-10-cl.png")
         
         trunkRequirements=meshManager.GeomRequirements(
@@ -33,20 +31,25 @@ class TreeFactory(gridFactory.GridFactory):
     def drawItem(self,LOD,x,y,drawResourcesFactory):
         quat=Quat()
         
-        pos=Vec3(x,y,self.heightSource.height(x,y))
+        heightOffset=-0.4 # make sure whole bottom of tree is in ground
+        pos=Vec3(x,y,self.heightSource.height(x,y)+heightOffset)
         self.drawTree(LOD,(pos, quat, 0, 0, 0),drawResourcesFactory)
                
     def drawTree(self,LOD,base,drawResourcesFactory):
         exists=random.random()
         if exists<.6: return
         age=random.random()**1.5
-        to = 14*age
+        to = 12*age
         
         if to<6: return
         
         leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex)
         leafTri=leafResources.getGeomTriangles()
-        
+        trunkResources=drawResourcesFactory.getDrawResources(self.trunkDataIndex)
+        lines = trunkResources.getGeomTristrips()
+        vertWriter = trunkResources.vertexWriter
+        normalWriter = trunkResources.normalWriter
+        texWriter = trunkResources.texcoordWriter
         
         maxbend=40+random.random()*20
         
@@ -73,21 +76,7 @@ class TreeFactory(gridFactory.GridFactory):
                 
                 
         stack = [base]
-        #lengthList = [2.0]*to
-        #numCopiesList = [0, 0, 2, 0, 0, 3]*(to/6+1)
-        #radiusList = [2.0, 1.8973665961010275, 1.8, 1.8, 1.2074767078498865, 1.145512985522207, 1.145512985522207, 0.62742330208560149, 0.59522600749631227, 0.59522600749631227, 0.39928974442126608, 0.37879951161531344, 0.37879951161531344, 0.20747703728364739, 0.19683000000000003, 0.19683000000000003, 0.13203757800338509, 0.12526184496685336, 0.12526184496685336, 0.068608738083060533, 0.065087963919721756, 0.065087963919721756, 0.043662333552465453, 0.041421726595134531, 0.041421726595134531, 0.02268761402696684, 0.021523360500000002, 0.021523360500000002, 0.01443830915467016, 0.013697382747125413, 0.013697382747125413, 0.0075023655093826675, 0.0071173688546215721, 0.0071173688546215721, 0.0047744761739620962, 0.0045294658031779598, 0.0045294658031779598, 0.0024808905938488233, 0.0023535794706749996, 0.0023535794706749996, 0.0015788291060631818, 0.0014978088033981637, 0.0014978088033981637, 0.0008203836684509948, 0.00077828428425286904, 0.00077828428425286904, 0.00052208896962275522, 0.00049529708557750993, 0.00049529708557750993, 0.00027128538643736883, 0.00025736391511831119, 0.00025736391511831119, 0.00017264496274800887, 0.00016378539265158914, 0.00016378539265158914, 8.9708954145116258e-05, 8.5105386483051203e-05, 8.5105386483051203e-05, 5.7090428828248272e-05, 5.4160736307900701e-05, 5.4160736307900701e-05, 2.9665057006926284e-05, 2.8142744118187332e-05, 2.8142744118187332e-05, 1.8878726676494776e-05]
-        #radiusList=[x*age*age for x in radiusList]
-        ends = []
-        
-        trunkResources=drawResourcesFactory.getDrawResources(self.trunkDataIndex)
-        vertWriter = trunkResources.vertexWriter
-        normalWriter = trunkResources.normalWriter
-        texWriter = trunkResources.texcoordWriter
-        geom = trunkResources.geom
-        
-        
-        
-        
+
         
         numVertices=3
         
@@ -98,22 +87,19 @@ class TreeFactory(gridFactory.GridFactory):
             angleData.append((math.cos(angle),math.sin(angle),1.0*i / numVertices))
         
         bottom=True
+        
         while stack: 
             pos, quat, depth, previousRow, sCoord = stack.pop() 
             length = lengthList[depth]
             radius=radiusList[depth]
             
             startRow = vertWriter.getWriteRow()
-            #vertWriter.setRow(startRow) 
-            #normalWriter.setRow(startRow)        
-            #texWriter.setRow(startRow)
             
             sCoord += length/4.0
             
             #this draws the body of the tree. This draws a ring of vertices and connects the rings with 
             #triangles to form the body. 
-            #this keepDrawing paramter tells the function wheter or not we're at an end 
-            #if the vertices before you were an end, dont draw branches to it 
+
             currAngle = 0 
             perp1 = quat.getRight() 
             perp2 = quat.getForward()   
@@ -129,17 +115,11 @@ class TreeFactory(gridFactory.GridFactory):
             if bottom: 
                 bottom=False
             else:
-                lines = GeomTristrips(Geom.UHStatic)         
+                         
                 for i in xrange(numVertices+1): 
                     lines.addVertices(i + previousRow,i + startRow)
                 lines.addVertices(previousRow,startRow)
                 lines.closePrimitive()
-    
-                geom.addPrimitive(lines)
-            
-            
-            
-            
             
             if depth + 1 < len(lengthList):
                 #move foward along the right axis 
@@ -156,61 +136,49 @@ class TreeFactory(gridFactory.GridFactory):
                     #just make another branch connected to this one with a small variation in direction 
                     stack.append((newPos, _randomBend(quat, 20), depth + 1, startRow, sCoord))
             else:
-                #ends.append((pos, quat, depth, startRow)) 
-                #self.drawLeaf(pos, quat) 
-                leafRow = leafResources.vertexWriter.getWriteRow()
                 up=quat.getUp()
                 s=3.0*self.scalar
                 dir1=perp1*s
                 dir2=perp2*s
-                bend=-up*(s/8.0)
+                bend=-up*(s/4.0)
+                
+                v0=pos+dir1
+                v1=pos+dir2+bend
+                v2=pos-dir1
+                v3=pos-dir2+bend
                 
                 norm1=dir1.cross(dir2+bend)
                 norm1.normalize()
                 norm2=dir1.cross(dir2-bend)
                 norm2.normalize()
                 
-                leafResources.vertexWriter.addData3f(pos+dir1)
-                leafResources.vertexWriter.addData3f(pos+dir2+bend)
-                leafResources.vertexWriter.addData3f(pos-dir1)
-                leafResources.vertexWriter.addData3f(pos-dir2+bend)
-                
-                leafResources.normalWriter.addData3f(up)
-                leafResources.normalWriter.addData3f(norm1) 
-                leafResources.normalWriter.addData3f(up) 
-                leafResources.normalWriter.addData3f(norm2)
-                
-                leafResources.texcoordWriter.addData2f(0,0)
-                leafResources.texcoordWriter.addData2f(0,1)
-                leafResources.texcoordWriter.addData2f(1,1)
-                leafResources.texcoordWriter.addData2f(1,0)
-                
-                leafTri.addVertices(leafRow,leafRow+1,leafRow+2)
-                leafTri.addVertices(leafRow,leafRow+2,leafRow+3)
-
-                
-                # back sides
-                leafRow = leafResources.vertexWriter.getWriteRow()
-                leafResources.vertexWriter.addData3f(pos+dir1)
-                leafResources.vertexWriter.addData3f(pos+dir2+bend)
-                leafResources.vertexWriter.addData3f(pos-dir1)
-                leafResources.vertexWriter.addData3f(pos-dir2+bend)
-                
-                leafResources.normalWriter.addData3f(-up)
-                leafResources.normalWriter.addData3f(-norm1) 
-                leafResources.normalWriter.addData3f(-up) 
-                leafResources.normalWriter.addData3f(-norm2)
-                
-                leafResources.texcoordWriter.addData2f(0,0)
-                leafResources.texcoordWriter.addData2f(0,1)
-                leafResources.texcoordWriter.addData2f(1,1)
-                leafResources.texcoordWriter.addData2f(1,0)
-                
-                leafTri.addVertices(leafRow+1,leafRow,leafRow+2)
-                leafTri.addVertices(leafRow+2,leafRow,leafRow+3)
-                
-                
-        
+                for x in range(2):
+                    leafRow = leafResources.vertexWriter.getWriteRow()
+                    leafResources.vertexWriter.addData3f(v0)
+                    leafResources.vertexWriter.addData3f(v1)
+                    leafResources.vertexWriter.addData3f(v2)
+                    leafResources.vertexWriter.addData3f(v3)
+                    
+                    leafResources.texcoordWriter.addData2f(0,0)
+                    leafResources.texcoordWriter.addData2f(0,1)
+                    leafResources.texcoordWriter.addData2f(1,1)
+                    leafResources.texcoordWriter.addData2f(1,0)
+                    
+                    if x==1:
+                        # back sides
+                        up=-up
+                        norm1=-norm1
+                        norm2=-norm2
+                        leafTri.addVertices(leafRow+1,leafRow,leafRow+2)
+                        leafTri.addVertices(leafRow+2,leafRow,leafRow+3)
+                    else:
+                        leafTri.addVertices(leafRow,leafRow+1,leafRow+2)
+                        leafTri.addVertices(leafRow,leafRow+2,leafRow+3)
+                        
+                    leafResources.normalWriter.addData3f(up)
+                    leafResources.normalWriter.addData3f(norm1) 
+                    leafResources.normalWriter.addData3f(up) 
+                    leafResources.normalWriter.addData3f(norm2)
 
 #this is for making the tree not too straight 
 def _randomBend(inQuat, maxAngle=20):
