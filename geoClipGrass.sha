@@ -53,7 +53,7 @@ void vshader(
     float2 pos;
     sincos(data.z*3.1415*8,pos.x,pos.y);
     float height=vtx_position.z*(data.w+minHeight);
-    height*=tex2D(k_grassData2,l_uv).w;
+    height*=tex2D(k_grassData2,l_uv).w*.5;
     float2 sway;
     sincos(data.z*3.1415*15,sway.x,sway.y);
     sway=height*sway*tiltScalar*frac(data.w*32);

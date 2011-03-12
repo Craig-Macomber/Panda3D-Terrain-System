@@ -25,14 +25,17 @@ backBinName="background"
 
 """This is a test/demo of the terrain system."""
 
-############## Select a renderer! ##############
+############## Configure! ##############
 #rendererClass=GeoClipMapper
 rendererClass=RenderAutoTiler
-#bakery = bakery.animate_dreams_bakery.ADBakery
-bakery = bakery.gpuBakery.GpuBakery
-############## Select a renderer! ##############
-
+if rendererClass==RenderAutoTiler:
+    #selectedBakery = bakery.animate_dreams_bakery.ADBakery ; rendererFolder='renderTilerSimple'
+    selectedBakery = bakery.gpuBakery.GpuBakery ; rendererFolder='renderTiler'
 enableMeshes=True
+mouseControl=False
+############## Configure! ##############
+
+
 
 
 # Init camera
@@ -55,44 +58,44 @@ if rendererClass is GeoClipMapper:
     waterNode = water.WaterNode( -10, -10, 20, 20, .01)
 else:
     waterNode = water.WaterNode( -100, -100, 200, 200, 1.3)
-    # Create a bakery that uses the "bakery2" folder for its resources
-    b = bakery(None,"bakeryTiler")
+    # Create a bakery that uses the "bakeryTiler" folder for its resources
+    b = selectedBakery(None,"bakeryTiler")
     #Make the main (highest LOD) tiler
-    n=RenderAutoTiler('renderTiler',b,tileSize,focus,1.0,4.0)
+    n=RenderAutoTiler(rendererFolder,b,tileSize,focus,1.0,4.0)
     useLowLOD=False
     useMidLOD=False
     
-    
-    # Setup a card maker for depth reset cards for between LOD draws
-    cm=CardMaker("depthwiper")
-    cm.setFrameFullscreenQuad()
-    
-    # Make node to hold depth reset cards
-    dist=100000
-    clearCardHolder=NodePath('clearCardHolder')
-    clearCardHolder.reparentTo(base.camera)
-    clearCardHolder.setDepthTest(False)
-    
-    clearCardHolder.setY(dist)
-    clearCardHolder.setScale(dist)
-    clearCardHolder.setAttrib(DepthTestAttrib.make(RenderAttrib.MAlways))
-    clearCardHolder.setAttrib(ColorWriteAttrib.make(ColorWriteAttrib.MNone))
-    
-    def addTerrainLOD(sort,scale,addDist,removeDist):
-        bg=RenderAutoTiler('renderTiler',b,tileSize*scale,focus,addDist,removeDist)
-        bg.reparentTo(render)
-        bg.setBin(backBinName,sort)
-        bg.setScale(terrainScale)
+    if useLowLOD or useMidLOD:
+        # Setup a card maker for depth reset cards for between LOD draws
+        cm=CardMaker("depthwiper")
+        cm.setFrameFullscreenQuad()
         
-        c=NodePath(cm.generate())
-        c.reparentTo(clearCardHolder)
-        c.setBin(backBinName,sort+1)
+        # Make node to hold depth reset cards
+        dist=100000
+        clearCardHolder=NodePath('clearCardHolder')
+        clearCardHolder.reparentTo(base.camera)
+        clearCardHolder.setDepthTest(False)
         
-        return bg
-    
-    # Make the background LOD tilers. This causes lots of over draw
-    if useMidLOD: bg1=addTerrainLOD(10,4,1.7,2.0)
-    if useLowLOD: bg2=addTerrainLOD(0,16,1.3,1.4)
+        clearCardHolder.setY(dist)
+        clearCardHolder.setScale(dist)
+        clearCardHolder.setAttrib(DepthTestAttrib.make(RenderAttrib.MAlways))
+        clearCardHolder.setAttrib(ColorWriteAttrib.make(ColorWriteAttrib.MNone))
+        
+        def addTerrainLOD(sort,scale,addDist,removeDist):
+            bg=RenderAutoTiler('renderTiler',b,tileSize*scale,focus,addDist,removeDist)
+            bg.reparentTo(render)
+            bg.setBin(backBinName,sort)
+            bg.setScale(terrainScale)
+            
+            c=NodePath(cm.generate())
+            c.reparentTo(clearCardHolder)
+            c.setBin(backBinName,sort+1)
+            
+            return bg
+        
+        # Make the background LOD tilers. This causes lots of over draw
+        if useMidLOD: bg1=addTerrainLOD(10,4,1.7,2.0)
+        if useLowLOD: bg2=addTerrainLOD(0,16,1.3,1.4)
 
     
     
@@ -261,8 +264,7 @@ class keyTracker(DirectObject):
             self.addKey("shift-"+key,name,False)
         
         self.keyMap[name]=False
-
-mouseControl=False
+        
 
 class World(keyTracker):
     def __init__(self):

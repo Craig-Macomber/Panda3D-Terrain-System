@@ -5,14 +5,9 @@ from panda3d.core import Vec3, Quat
 
 import math, random
 
-class TreeFactory(meshManager.MeshFactory):
-    def __init__(self,heightSource):
-        meshManager.MeshFactory.__init__(self)
-        
-        self.heightSource=heightSource
-        
-        self.scalar=.0002
-        
+import gridFactory
+
+class TreeFactory(gridFactory.GridFactory):
     def regesterGeomRequirements(self,LOD,collection):
         """
         collection is a GeomRequirementsCollection
@@ -35,35 +30,23 @@ class TreeFactory(meshManager.MeshFactory):
         self.trunkDataIndex=collection.add(trunkRequirements)
         self.leafDataIndex=collection.add(leafRequirements)
     
-    def getLodThresholds(self):
-        # perhaps this should also have some approximate cost stats for efficent graceful degradation
-        return [] # list of values at which rendering changes somewhat
-    
-    def draw(self,LOD,x0,y0,x1,y1,drawResourcesFactory):
+    def drawItem(self,LOD,x,y,drawResourcesFactory):
         quat=Quat()
-        leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex)
-        leafTri = GeomTriangles(Geom.UHStatic) 
         
-        grid=10.0*self.scalar
-        x=math.ceil(x0/grid)*grid
-        while x<x1:
-            y=math.ceil(y0/grid)*grid
-            while y<y1:
-                pos=Vec3(x,y,self.heightSource.height(x,y))
-                self.drawTree(LOD,(pos, quat, 0, 0, 0),drawResourcesFactory,leafTri)
-                y+=grid
-            x+=grid
-        
-        leafResources.geom.addPrimitive(leafTri)
-        
-    def drawTree(self,LOD,base,drawResourcesFactory,leafTri):
-        leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex)
+        pos=Vec3(x,y,self.heightSource.height(x,y))
+        self.drawTree(LOD,(pos, quat, 0, 0, 0),drawResourcesFactory)
+               
+    def drawTree(self,LOD,base,drawResourcesFactory):
         exists=random.random()
         if exists<.6: return
         age=random.random()**1.5
         to = 14*age
         
         if to<6: return
+        
+        leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex)
+        leafTri=leafResources.getGeomTriangles()
+        
         
         maxbend=40+random.random()*20
         
@@ -177,25 +160,26 @@ class TreeFactory(meshManager.MeshFactory):
                 #self.drawLeaf(pos, quat) 
                 leafRow = leafResources.vertexWriter.getWriteRow()
                 up=quat.getUp()
-                s=1.0*self.scalar
+                s=3.0*self.scalar
                 dir1=perp1*s
                 dir2=perp2*s
                 bend=-up*(s/8.0)
                 
-                # TODO: fix backsides get upwards normals!
+                norm1=dir1.cross(dir2+bend)
+                norm1.normalize()
+                norm2=dir1.cross(dir2-bend)
+                norm2.normalize()
                 
                 leafResources.vertexWriter.addData3f(pos+dir1)
                 leafResources.vertexWriter.addData3f(pos+dir2+bend)
                 leafResources.vertexWriter.addData3f(pos-dir1)
                 leafResources.vertexWriter.addData3f(pos-dir2+bend)
+                
                 leafResources.normalWriter.addData3f(up)
-                n=dir1.cross(dir2+bend)
-                n.normalize
-                leafResources.normalWriter.addData3f(n) 
+                leafResources.normalWriter.addData3f(norm1) 
                 leafResources.normalWriter.addData3f(up) 
-                n=dir1.cross(dir2-bend)
-                n.normalize
-                leafResources.normalWriter.addData3f(n)
+                leafResources.normalWriter.addData3f(norm2)
+                
                 leafResources.texcoordWriter.addData2f(0,0)
                 leafResources.texcoordWriter.addData2f(0,1)
                 leafResources.texcoordWriter.addData2f(1,1)
@@ -203,8 +187,28 @@ class TreeFactory(meshManager.MeshFactory):
                 
                 leafTri.addVertices(leafRow,leafRow+1,leafRow+2)
                 leafTri.addVertices(leafRow,leafRow+2,leafRow+3)
+
+                
+                # back sides
+                leafRow = leafResources.vertexWriter.getWriteRow()
+                leafResources.vertexWriter.addData3f(pos+dir1)
+                leafResources.vertexWriter.addData3f(pos+dir2+bend)
+                leafResources.vertexWriter.addData3f(pos-dir1)
+                leafResources.vertexWriter.addData3f(pos-dir2+bend)
+                
+                leafResources.normalWriter.addData3f(-up)
+                leafResources.normalWriter.addData3f(-norm1) 
+                leafResources.normalWriter.addData3f(-up) 
+                leafResources.normalWriter.addData3f(-norm2)
+                
+                leafResources.texcoordWriter.addData2f(0,0)
+                leafResources.texcoordWriter.addData2f(0,1)
+                leafResources.texcoordWriter.addData2f(1,1)
+                leafResources.texcoordWriter.addData2f(1,0)
+                
                 leafTri.addVertices(leafRow+1,leafRow,leafRow+2)
                 leafTri.addVertices(leafRow+2,leafRow,leafRow+3)
+                
                 
         
 

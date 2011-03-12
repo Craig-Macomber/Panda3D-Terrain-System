@@ -5,12 +5,13 @@ from panda3d.core import Vec3, Quat
 
 import math, random
 
-class FernFactory(meshManager.MeshFactory):
+import gridFactory
+
+class FernFactory(gridFactory.GridFactory):
     def __init__(self,heightSource):
-        meshManager.MeshFactory.__init__(self)
-        
-        self.heightSource=heightSource
+        gridFactory.GridFactory.__init__(self,heightSource)
         self.scalar=.0001
+        self.gridSize=6.0
         
     def regesterGeomRequirements(self,LOD,collection):
         leafTexture = base.loader.loadTexture("meshManager/models/material-10-cl.png")
@@ -21,38 +22,28 @@ class FernFactory(meshManager.MeshFactory):
             )
         self.leafDataIndex=collection.add(leafRequirements)
     
-    def getLodThresholds(self):
-        # perhaps this should also have some approximate cost stats for efficent graceful degradation
-        return [] # list of values at which rendering changes somewhat
-    
-    def draw(self,LOD,x0,y0,x1,y1,drawResourcesFactory):
+    def drawItem(self,LOD,x,y,drawResourcesFactory):
         quat=Quat()
-        leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex)
-        leafTri = GeomTriangles(Geom.UHStatic) 
-        grid=3.0*self.scalar
-        x=math.ceil(x0/grid)*grid
-        while x<x1:
-            y=math.ceil(y0/grid)*grid
-            while y<y1:
-                pos=Vec3(x,y,self.heightSource.height(x,y))
-                self.drawFern(LOD,pos, quat,drawResourcesFactory,leafTri)
-                y+=grid
-            x+=grid
-        leafResources.geom.addPrimitive(leafTri)
         
-    def drawFern(self,LOD,pos,quat,drawResourcesFactory,leafTri):
-        leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex)
+        pos=Vec3(x,y,self.heightSource.height(x,y))
+        self.drawFern(LOD,pos, quat,drawResourcesFactory)    
+    
+    def drawFern(self,LOD,pos,quat,drawResourcesFactory):
         
         exists=random.random()
-        if exists<.6: return
+        if exists<.8: return
         scalar=random.random()
-        scale=scalar**.1
+        scale=scalar**.3
         
         if scale<.3: return
         
-        count=int(scalar*10)
+        leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex)
+        leafTri=leafResources.getGeomTriangles()
         
-        scale*=self.scalar
+        
+        count=int((scalar**.5)*16)
+        
+        scale*=self.scalar*2
         
         q2=Quat()
         q3=Quat()
@@ -93,3 +84,25 @@ class FernFactory(meshManager.MeshFactory):
             
             leafTri.addVertices(leafRow,leafRow+1,leafRow+2)
             leafTri.addVertices(leafRow+1,leafRow+3,leafRow+2)
+            
+            
+            leafRow = leafResources.vertexWriter.getWriteRow()
+            
+            leafResources.vertexWriter.addData3f(pos)
+            leafResources.vertexWriter.addData3f(pos+f+r)
+            leafResources.vertexWriter.addData3f(pos+f-r)
+            leafResources.vertexWriter.addData3f(pos+f2)
+            
+            leafResources.normalWriter.addData3f(-norm0)
+            leafResources.normalWriter.addData3f(-norm1) 
+            leafResources.normalWriter.addData3f(-norm1) 
+            leafResources.normalWriter.addData3f(-norm2)
+            
+            leafResources.texcoordWriter.addData2f(0,0)
+            leafResources.texcoordWriter.addData2f(0,1)
+            leafResources.texcoordWriter.addData2f(1,0)
+            leafResources.texcoordWriter.addData2f(1,1)
+            
+            
+            leafTri.addVertices(leafRow+1,leafRow,leafRow+2)
+            leafTri.addVertices(leafRow+3,leafRow+1,leafRow+2)

@@ -1,4 +1,4 @@
-from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat
+from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat, GeomTriangles
 import math
 
 import toroidalCache
@@ -49,9 +49,11 @@ class LODLevel(toroidalCache.ToroidalCache):
         for c in self.meshManager.factories:
             c.draw(self.LOD,x,y,x2,y2,drawResourcesFactory)
         
+        
         nodePath=drawResourcesFactory.getNodePath()
         
         if nodePath is None: return
+        
         block=_MeshBlock(self.LOD,x,y,x2,y2)
         nodePath.reparentTo(self.meshManager)
         nodePath.setPythonTag("_MeshBlock",block)
@@ -150,8 +152,17 @@ class DrawResources(object):
         self.vertexWriter = GeomVertexWriter(vdata, "vertex") 
         self.normalWriter = GeomVertexWriter(vdata, "normal") 
         self.texcoordWriter = GeomVertexWriter(vdata, "texcoord")
+        self._geomTriangles = None
         
-
+    def getGeomTriangles(self):
+        if self._geomTriangles is None:
+            self._geomTriangles = GeomTriangles(Geom.UHStatic)
+        return self._geomTriangles
+    
+    def finalize(self):
+        if self._geomTriangles is not None:
+            self.geom.addPrimitive(self._geomTriangles)
+    
 class _DrawNodeSpec(object):
     """
     spec for what properties are needed on the
@@ -219,7 +230,12 @@ class DrawResourcesFactory(object):
     def getNodePath(self):
         """
         returns None if nothing drawn, else returns a NodePath
+        
+        finalizes resources
         """
+        for r in self.resources:
+            if r is not None:
+                r.finalize()
         return self.np
 
     def _getNodePath(self,nodeIndex):
