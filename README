@@ -1,19 +1,17 @@
 Instructions:
 
-Run main.py from the enclosing terrain folder (cd to the directory first)
+Run main.py.
 
 Terrain Bakery:
 
-This is one of 3 parts to the proposed terrain system. It is the middle step between the editor and the renderer. Its job is to bake all the procedural and editor specified content into tiles ready to be rendered. Within the current design, there are 2 aspects to this, map generation, and mesh placement. Currently only map generation is implemented, and it generates things like height maps and detail texture maps, as well as any other textures (maps) needed for the tiles for things like procedural mesh distributions.
+This is one of 3 parts to the proposed terrain system. It is the middle step between the editor and the renderer. Its job is to bake all the procedural and editor specified content into tiles ready to be rendered. Within the current design, there are 2 aspects to this, map generation, and mesh placement. Map generation generates things like height maps and detail texture maps, as well as any other textures (maps) needed for the tiles for things like procedural mesh distributions.
 
 Warning: Status documentation is out of date, along with some of the general documentation.
 
-This example of the bakery's use is in main.py. It loads one of the bakery folders, which contain project specific map information in the form of specially formatted shader files. It then saves the output maps to the pics folder.
+This example of the bakery's use is in main.py. One of the bakeries, bakery.gpuBakery, loads one of the bakery folders, which contain project specific map information in the form of specially formatted shader files. It then saves the output maps as tiles.
 
-One of the current major limitations is the lack of a good noise source. This will be addressed by allowing another type of input, premade textures, rather than only generated maps. Some way of loading 1D and 3D textures may also be added as well. (2D textures added now)
+One issue with bakery.gpuBakery is the error handling of shader errors. The line numbers between the files you edit, and the shaders loaded (and thus reported line numbers) are quite different. To aid in debugging for now, the full shaders are written to the ShadersOut folder, though it may not be clear which shader causes the errors, it should help.
 
-Another major issue is the error handling of shader errors. The line numbers between the files you edit, and the shaders loaded (and thus reported line numbers) are quite different. To aid in debugging for now, the full shaders are written to the ShadersOut folder, though it may not be clear which shader causes the errors, it should help.
+Renderers:
 
-Misc nodes:
-Shader generator effects for vshader out values (position, colors, normals, uvs etc) can be used in geoClip,
-and in bakery to bake yertex peoperties to textures which will convert to vertex data arrays for backed mesh placement
+Included are multiple renders. The most stable, and thus default, is the RenderAutoTiler. Others can be selected by editing main.py
