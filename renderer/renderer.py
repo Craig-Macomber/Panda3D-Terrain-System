@@ -18,7 +18,7 @@ class RenderNode(NodePath):
     def __init__(self,path,terrainNode):
         NodePath.__init__(self,path+"_render")
         
-        self.heightScale=500.0
+        self.heightScale=300.0
         
         d=parseFile(path+'/texList.txt')
         

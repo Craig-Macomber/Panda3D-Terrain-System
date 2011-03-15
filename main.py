@@ -26,8 +26,8 @@ backBinName="background"
 """This is a test/demo of the terrain system."""
 
 ############## Configure! ##############
-rendererClass=GeoClipMapper
-#rendererClass=RenderAutoTiler
+#rendererClass=GeoClipMapper
+rendererClass=RenderAutoTiler
 if rendererClass==RenderAutoTiler:
     #selectedBakery = bakery.animate_dreams_bakery.ADBakery ; rendererFolder='renderTilerSimple'
     selectedBakery = bakery.gpuBakery.GpuBakery ; rendererFolder='renderTiler'
@@ -35,7 +35,7 @@ if rendererClass==RenderAutoTiler:
     useMidLOD=False
 enableMeshes=True
 mouseControl=False
-enableWater=True
+enableWater=False
 ############## Configure! ##############
 
 
