@@ -1,8 +1,14 @@
-output maps file:
-specify relative resolutions
-    resolutionScale
-    addPixels
+Organize/separate core+implementations from usage+examples
+    Put core into terrain package, separate from example
+    Perhaps split up repo to have an examples and a core so it can be easily included in other projects.
+Integrate mesh manager with tile system
+    Make a renderer that uses mesh manager directly, and provides it with tiles as needed (or passes the bakery to it)
+    Make sure the mesh manager does not render areas first so that it can have height data
+Make randoms in mesh manager deterministic
+Make meshManager async, and optimize it.
 
+
+output maps file:
 specify pixelplacement mode
     pixel centers on tile corners
         kinda like margins .5 and addPixels -1
@@ -11,7 +17,7 @@ specify pixelplacement mode
         interger px added to all sides
 
 fixed pixel size in world space
-max/min pixel size in wrold space
+max/min pixel size in world space
 
 
 maps:
@@ -21,5 +27,5 @@ sample modes:
     filtered (filtermode)
     
 sample settings:
-    alwayse cashed
+    always cashed
     never cashed  

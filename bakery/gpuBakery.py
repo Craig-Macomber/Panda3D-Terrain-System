@@ -1,9 +1,7 @@
-from bakery import parseFile,Tile,loadTex,pathPrefix,Map,Bakery
+from bakery import parseFile,Tile,loadTex,Map,Bakery
 
-import os
-
-from panda3d.core import *
-from textureRenderer import *
+from panda3d.core import CardMaker,OrthographicLens,NodePath,Camera,TextureStage,Shader,Texture
+from textureRenderer import Queue,QueueItem
 
 qq=Queue()
 
@@ -14,7 +12,48 @@ tileMapSize=256
 useShaderFiles=False
 
 
-mapMakerShaderSource=open(pathPrefix()+'bakery/mapMaker.cg', 'r').read()
+mapMakerShaderSource="""//Cg
+
+void vshader(
+    uniform float4x4 mat_modelproj,
+    in float4 vtx_position : POSITION,
+    uniform float4 k_offset,
+    uniform float4 k_scale,
+    out float2 l_tex: TEXCOORD0,
+    out float2 l_pos: TEXCOORD1,
+    out float4 l_position : POSITION)
+{
+    l_position = mul(mat_modelproj, vtx_position);
+    l_pos = vtx_position.xz*k_scale.x+k_offset.xy;
+    l_tex=vtx_position.xz;
+}
+
+float3 packFloat(float h){
+int3 hv=int3(clamp(h,0,1)*float3(256,256*256,256*256*256));
+hv.yz%=256;
+return float3(hv)/256;
+}
+
+float unpackFloat(float3 h){
+return h.x+h.y/256+h.z/(256*256);
+}
+
+float4 shade(float2 pos#paramsDef#){
+
+#source#
+
+}
+
+void fshader( 
+  in float2 l_tex: TEXCOORD0,
+  in float2 l_pos: TEXCOORD1,
+#tex#
+  out float4 o_color: COLOR) 
+{ 
+    o_color=shade(l_pos#params#);
+} 
+
+"""
 
 def texMargin(size):
     return (1.0/(size-1))/2.0
