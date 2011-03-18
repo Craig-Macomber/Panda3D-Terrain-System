@@ -1,6 +1,7 @@
 Instructions:
 
-Run main.py.
+To run a sample, navigate to the repository root directory, and run one of the samples from there
+example: python samples/infiniteRalph/main.py
 
 Terrain Bakery:
 
@@ -8,10 +9,10 @@ This is one of 3 parts to the proposed terrain system. It is the middle step bet
 
 Warning: Status documentation is out of date, along with some of the general documentation.
 
-This example of the bakery's use is in main.py. One of the bakeries, bakery.gpuBakery, loads one of the bakery folders, which contain project specific map information in the form of specially formatted shader files. It then saves the output maps as tiles.
+One of the bakeries, bakery.gpuBakery, loads one of the bakery folders, which contain project specific map information in the form of specially formatted shader files. It then saves the output maps as tiles.
 
 One issue with bakery.gpuBakery is the error handling of shader errors. The line numbers between the files you edit, and the shaders loaded (and thus reported line numbers) are quite different. To aid in debugging for now, the full shaders are written to the ShadersOut folder, though it may not be clear which shader causes the errors, it should help.
 
 Renderers:
 
-Included are multiple renders. The most stable, and thus default, is the RenderAutoTiler. Others can be selected by editing main.py
+Included are multiple renders. The most stable, and thus default, is the RenderAutoTiler.

@@ -1,5 +1,4 @@
 Organize/separate core+implementations from usage+examples
-    Put core into terrain package, separate from example
     Perhaps split up repo to have an examples and a core so it can be easily included in other projects.
 Integrate mesh manager with tile system
     Make a renderer that uses mesh manager directly, and provides it with tiles as needed (or passes the bakery to it)
