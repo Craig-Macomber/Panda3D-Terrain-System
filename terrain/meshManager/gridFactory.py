@@ -2,13 +2,11 @@ import math
 import meshManager
 
 class GridFactory(meshManager.MeshFactory):
-    def __init__(self,heightSource):
-        meshManager.MeshFactory.__init__(self)
-        
+    def __init__(self,heightSource,scalar,gridSize):
         self.heightSource=heightSource
-        
-        self.scalar=1.0
-        self.gridSize=10.0
+        self.scalar=scalar
+        self.gridSize=gridSize
+        meshManager.MeshFactory.__init__(self)
         
     def draw(self,LOD,x0,y0,x1,y1,drawResourcesFactory):
         grid=self.gridSize*self.scalar

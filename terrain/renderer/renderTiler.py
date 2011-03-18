@@ -1,10 +1,10 @@
 import math
 
 from renderer import RenderNode
-from bakery.bakery import loadTex
+from terrain.bakery.bakery import loadTex
 
 from panda3d.core import *
-from textureRenderer import *
+#from terrain.textureRenderer import *
 
 class RenderTiler(RenderNode):
     def __init__(self,path):

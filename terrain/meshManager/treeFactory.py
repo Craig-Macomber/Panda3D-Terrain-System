@@ -7,24 +7,35 @@ import gridFactory
 
 
 class TreeFactory(gridFactory.GridFactory):
-    def __init__(self,heightSource):
-        gridFactory.GridFactory.__init__(self,heightSource)
-        self.scalar=.6
-        self.gridSize=10.0
-    
+    def __init__(self,heightSource,barkTexture=None,leafTexture=None):
+        self.scalar=1.0
+        self.gridSize=4.0
+        self.barkTexture=barkTexture
+        self.leafTexture=leafTexture
+        gridFactory.GridFactory.__init__(self,heightSource,1.0,6.0)
     
     def regesterGeomRequirements(self,LOD,collection):
-        barkTexture = base.loader.loadTexture("meshManager/models/barkTexture.jpg") 
-        leafTexture = base.loader.loadTexture("meshManager/models/material-10-cl.png")
+        if self.barkTexture is not None:
+            trunkRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=GeomVertexFormat.getV3n3t2(),
+                texture=self.barkTexture
+                )
+        else:
+            trunkRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=GeomVertexFormat.getV3n3c4(),
+                )
         
-        trunkRequirements=meshManager.GeomRequirements(
-            geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-            texture=barkTexture
-            )
-        leafRequirements=meshManager.GeomRequirements(
-            geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-            texture=leafTexture
-            )
+        if self.leafTexture is not None:
+            leafRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=GeomVertexFormat.getV3n3t2(),
+                texture=self.leafTexture
+                )
+        
+        else:
+            leafRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=GeomVertexFormat.getV3n3c4(),
+                )
+        
         self.trunkDataIndex=collection.add(trunkRequirements)
         self.leafDataIndex=collection.add(leafRequirements)
     
@@ -43,13 +54,18 @@ class TreeFactory(gridFactory.GridFactory):
         
         if to<6: return
         
+        dotCount=int((2/age))
+        
         leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex)
         leafTri=leafResources.getGeomTriangles()
         trunkResources=drawResourcesFactory.getDrawResources(self.trunkDataIndex)
         lines = trunkResources.getGeomTristrips()
         vertWriter = trunkResources.vertexWriter
         normalWriter = trunkResources.normalWriter
-        texWriter = trunkResources.texcoordWriter
+        if self.barkTexture:
+            texWriter = trunkResources.texcoordWriter
+        else:
+            colorWriter = trunkResources.colorWriter
         
         maxbend=40+random.random()*20
         
@@ -58,8 +74,8 @@ class TreeFactory(gridFactory.GridFactory):
         numCopiesList=[]
         radiusList=[]
         currR=age*1.0*(random.random()*2+1)
+        forkCount=0
         for i in xrange(forks+1):
-            forkCount=2+(i%2)
             currR*=1/math.sqrt(2)
             endR=currR*.9*.9
             if i==forks:
@@ -67,16 +83,15 @@ class TreeFactory(gridFactory.GridFactory):
                 forkCount=0
             if i<2:
                 lengthList.extend([2.0,2.0,2.0])
-                numCopiesList.extend([0,0,forkCount])
+                numCopiesList.extend([forkCount,0,0])
                 radiusList.extend([currR,currR*.9,endR])
             else:
                 lengthList.extend([6.0])
                 numCopiesList.extend([forkCount])
                 radiusList.extend([endR])
-                
+            forkCount=2+(i%2)
                 
         stack = [base]
-
         
         numVertices=3
         
@@ -109,7 +124,10 @@ class TreeFactory(gridFactory.GridFactory):
                 normal = perp1 * cos + perp2 * sin        
                 normalWriter.addData3f(normal) 
                 vertWriter.addData3f(adjCircle) 
-                texWriter.addData2f(tex,sCoord) 
+                if self.barkTexture is not None:
+                    texWriter.addData2f(tex,sCoord) 
+                else:
+                    colorWriter.addData4f(.4,.3,.2,1)
             #we cant draw quads directly so we use Tristrips 
             
             if bottom: 
@@ -130,14 +148,17 @@ class TreeFactory(gridFactory.GridFactory):
                 numCopies = numCopiesList[depth]  
                 if numCopies:
                     angleOffset=random.random()*2*math.pi
+                    
                     for i in xrange(numCopies): 
-                        stack.append((newPos, _angleRandomAxis(quat, 2 * math.pi * i / numCopies+angleOffset, maxbend), depth + 1, startRow, sCoord))
+                        newQuat= _angleRandomAxis(quat, 2 * math.pi * i / numCopies+angleOffset, maxbend)
+                        newPos2=pos + newQuat.getUp() * length * self.scalar
+                        stack.append((newPos2,newQuat, depth + 1, startRow, sCoord))
                 else: 
                     #just make another branch connected to this one with a small variation in direction 
                     stack.append((newPos, _randomBend(quat, 20), depth + 1, startRow, sCoord))
             else:
                 up=quat.getUp()
-                s=3.0*self.scalar
+                s=5.0*self.scalar
                 dir1=perp1*s
                 dir2=perp2*s
                 bend=-up*(s/4.0)
@@ -158,11 +179,17 @@ class TreeFactory(gridFactory.GridFactory):
                     leafResources.vertexWriter.addData3f(v1)
                     leafResources.vertexWriter.addData3f(v2)
                     leafResources.vertexWriter.addData3f(v3)
-                    
-                    leafResources.texcoordWriter.addData2f(0,0)
-                    leafResources.texcoordWriter.addData2f(0,1)
-                    leafResources.texcoordWriter.addData2f(1,1)
-                    leafResources.texcoordWriter.addData2f(1,0)
+                    if self.leafTexture is not None:
+                        n=dotCount
+                        leafResources.texcoordWriter.addData2f(0,0)
+                        leafResources.texcoordWriter.addData2f(0,n)
+                        leafResources.texcoordWriter.addData2f(n,n)
+                        leafResources.texcoordWriter.addData2f(n,0)
+                    else:
+                        leafResources.colorWriter.addData4f(.5,.4,.0,1)
+                        leafResources.colorWriter.addData4f(.0,.4,.0,1)
+                        leafResources.colorWriter.addData4f(.5,.4,.0,1)
+                        leafResources.colorWriter.addData4f(.0,.4,.0,1)
                     
                     if x==1:
                         # back sides
@@ -196,7 +223,7 @@ def _angleRandomAxis(inQuat, angle, maxAngle):
     q=Quat()
     angleRange=0.125
     nangle = angle + math.pi * (angleRange * random.random() - angleRange/2) 
-    #power of 2 here makes distrobution even withint a circle
+    #power of 1/2 here makes distrobution even withint a circle
     # (makes larger bends are more likley as they are further spread) 
     ammount=(random.random()**(1.0/2))*maxAngle
     q.setHpr((math.sin(nangle)*ammount,math.cos(nangle)*ammount,0))

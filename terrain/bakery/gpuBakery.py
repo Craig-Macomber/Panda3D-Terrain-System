@@ -1,7 +1,7 @@
 from bakery import parseFile,Tile,loadTex,Map,Bakery
 
 from panda3d.core import CardMaker,OrthographicLens,NodePath,Camera,TextureStage,Shader,Texture
-from textureRenderer import Queue,QueueItem
+from terrain.textureRenderer import Queue,QueueItem
 
 qq=Queue()
 

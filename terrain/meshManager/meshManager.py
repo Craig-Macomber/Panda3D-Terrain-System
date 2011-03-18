@@ -222,6 +222,7 @@ class DrawResources(object):
         self.vertexWriter = GeomVertexWriter(vdata, "vertex") 
         self.normalWriter = GeomVertexWriter(vdata, "normal") 
         self.texcoordWriter = GeomVertexWriter(vdata, "texcoord")
+        self.colorWriter = GeomVertexWriter(vdata, "color")
         self._geomTriangles = None
         self._geomTristrips = None
         

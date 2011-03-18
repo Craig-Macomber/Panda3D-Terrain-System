@@ -7,18 +7,22 @@ import gridFactory
 
 
 class FernFactory(gridFactory.GridFactory):
-    def __init__(self,heightSource):
-        gridFactory.GridFactory.__init__(self,heightSource)
-        self.scalar=.1
-        self.gridSize=12.0
+    def __init__(self,heightSource,leafTexture=None):
+        self.leafTexture=leafTexture
+        gridFactory.GridFactory.__init__(self,heightSource,.2,12.0)
         
     def regesterGeomRequirements(self,LOD,collection):
-        leafTexture = base.loader.loadTexture("meshManager/models/material-10-cl.png")
-
-        leafRequirements=meshManager.GeomRequirements(
-            geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-            texture=leafTexture
-            )
+        if self.leafTexture:
+            leafRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=GeomVertexFormat.getV3n3t2(),
+                texture=leafTexture
+                )
+        else:
+            leafRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=GeomVertexFormat.getV3n3c4(),
+                )
+        
+        
         self.leafDataIndex=collection.add(leafRequirements)
     
     def drawItem(self,LOD,x,y,drawResourcesFactory):
@@ -70,10 +74,17 @@ class FernFactory(gridFactory.GridFactory):
                 leafResources.vertexWriter.addData3f(pos+f-r)
                 leafResources.vertexWriter.addData3f(pos+f2)
                 
-                leafResources.texcoordWriter.addData2f(0,0)
-                leafResources.texcoordWriter.addData2f(0,1)
-                leafResources.texcoordWriter.addData2f(1,0)
-                leafResources.texcoordWriter.addData2f(1,1)
+                
+                if self.leafTexture:
+                    leafResources.texcoordWriter.addData2f(0,0)
+                    leafResources.texcoordWriter.addData2f(0,1)
+                    leafResources.texcoordWriter.addData2f(1,0)
+                    leafResources.texcoordWriter.addData2f(1,1)
+                else:
+                    leafResources.colorWriter.addData4f(.0,.2,.0,1)
+                    leafResources.colorWriter.addData4f(.0,.2,.0,1)
+                    leafResources.colorWriter.addData4f(.0,.2,.0,1)
+                    leafResources.colorWriter.addData4f(.0,.2,.0,1)
             
                 if x==1:
                     # back sides

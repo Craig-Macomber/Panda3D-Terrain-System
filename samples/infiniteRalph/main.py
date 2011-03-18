@@ -1,7 +1,12 @@
+"""
+This is a test/demo of the terrain system.
+
+Run it from the repository root directory
+"""
+
 from panda3d.core import *
 
 loadPrcFile("TerrainConfig.prc")
-
 
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.DirectObject import DirectObject
@@ -11,26 +16,30 @@ import math
 from direct.task import Task
 from direct.gui.OnscreenText import OnscreenText
 from direct.actor.Actor import Actor
-from sys import exit
+import sys
 
+sys.path.append(".")
+sampleDir="samples/infiniteRalph/"
 
-import bakery.animate_dreams_bakery
-import bakery.gpuBakery
-from renderer.renderTiler import RenderAutoTiler
-from renderer.geoClipMapper import GeoClipMapper
+import terrain
+import terrain.bakery.animate_dreams_bakery
+import terrain.bakery.gpuBakery
+from terrain.renderer.renderTiler import RenderAutoTiler
+from terrain.renderer.geoClipMapper import GeoClipMapper
+from terrain.bakery.bakery import loadTex
 import water
+
 
 print PandaSystem.getVersionString()
 backBinName="background"
 
-"""This is a test/demo of the terrain system."""
 
 ############## Configure! ##############
 #rendererClass=GeoClipMapper
 rendererClass=RenderAutoTiler
 if rendererClass==RenderAutoTiler:
-    #selectedBakery = bakery.animate_dreams_bakery.ADBakery ; rendererFolder='renderTilerSimple'
-    selectedBakery = bakery.gpuBakery.GpuBakery ; rendererFolder='renderTiler'
+    #selectedBakery = terrain.bakery.animate_dreams_bakery.ADBakery ; rendererFolder=sampleDir+'renderTilerSimple'
+    selectedBakery = terrain.bakery.gpuBakery.GpuBakery ; rendererFolder=sampleDir+'renderTiler'
     useLowLOD=False
     useMidLOD=False
 enableMeshes=True
@@ -59,13 +68,13 @@ focus=NodePath("tilerFocuse")
 
 if rendererClass is GeoClipMapper:
     # Create a bakery that uses the "bakery2" folder for its resources
-    b=bakery.gpuBakery.GpuBakery(None,"bakeryData")
-    n=GeoClipMapper('renderData',b,tileSize/4.0,focus)
+    b=terrain.bakery.gpuBakery.GpuBakery(None,sampleDir+"bakeryData")
+    n=GeoClipMapper(sampleDir+'renderData',b,tileSize/4.0,focus)
     if enableWater: waterNode = water.WaterNode( -10, -10, 20, 20, .01)
 else:
     
     # Create a bakery that uses the "bakeryTiler" folder for its resources
-    b = selectedBakery(None,"bakeryTiler")
+    b = selectedBakery(None,sampleDir+"bakeryTiler")
     #Make the main (highest LOD) tiler
     n=RenderAutoTiler(rendererFolder,b,tileSize,focus,2.5,2.8)
     if enableWater: waterNode = water.WaterNode( -100, -100, 200, 200, 0.1*n.heightScale)
@@ -88,7 +97,7 @@ else:
         clearCardHolder.setAttrib(ColorWriteAttrib.make(ColorWriteAttrib.MNone))
         
         def addTerrainLOD(sort,scale,addDist,removeDist):
-            bg=RenderAutoTiler('renderTiler',b,tileSize*scale,focus,addDist,removeDist)
+            bg=RenderAutoTiler(rendererFolder,b,tileSize*scale,focus,addDist,removeDist)
             bg.reparentTo(render)
             bg.setBin(backBinName,sort)
             bg.setScale(terrainScale)
@@ -304,7 +313,7 @@ class World(keyTracker):
         self.ralph.reparentTo(render)
         self.ralph.setScale(.4)
         self.ralph.setPos(ralphStartPos)
-        self.ralph.setShaderAuto()
+        #self.ralph.setShaderAuto()
         
         focus.reparentTo(self.ralph)
 
@@ -316,7 +325,7 @@ class World(keyTracker):
 
         # Accept the control keys for movement and rotation
         
-        self.accept("escape", exit)
+        self.accept("escape", sys.exit)
 
         
         self.addKey("w","forward")
@@ -353,17 +362,20 @@ class World(keyTracker):
         
         
         if enableMeshes:
-            import meshManager.meshManager
-            import meshManager.treeFactory
-            import meshManager.fernFactory
+            import terrain.meshManager.meshManager
+            import terrain.meshManager.treeFactory
+            import terrain.meshManager.fernFactory
             #scalar=1.0/terrainScale
             class HeightTranslator(object):
                 def height(selfx,x,y):
                     h=n.height(x,y)
                     return h
             ht=n#HeightTranslator()
-            factories=[meshManager.treeFactory.TreeFactory(ht),meshManager.fernFactory.FernFactory(ht)]
-            self.meshManager=meshManager.meshManager.MeshManager(factories)
+            leafTexture = loadTex(sampleDir+"textures/material-10-cl",False)
+            barkTexture = loadTex(sampleDir+"textures/barkTexture",False)
+            tf=terrain.meshManager.treeFactory.TreeFactory(ht,barkTexture=barkTexture,leafTexture=leafTexture)
+            factories=[tf,terrain.meshManager.fernFactory.FernFactory(ht)]
+            self.meshManager=terrain.meshManager.meshManager.MeshManager(factories)
             self.meshManager.reparentTo(n)
             self.meshManager.setScale(1.0)
         
