@@ -220,20 +220,13 @@ class GpuBakery(Bakery):
         
         """
         
-        # TODO: It is prabably horrible how this works
-        # It should not just use asyncRenderMap then block several frames until done.
-        
-        done=[False]
         tex=[0]
         def doneFunc(ttex):
             tex[0]=ttex
-            done[0]=True
             
         self.asyncRenderMap(rawTile, inputMaps, shader, doneFunc, toRam=toRam)
         
-        while not done[0]:
-            qq.processQueue()
-            base.graphicsEngine.renderFrame()
+        qq.flush()
 
         return tex[0]
         

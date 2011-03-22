@@ -41,7 +41,7 @@ class BakeryManager(object):
         def replaceRenderTile(x,y,old):
             new=self.tileCache.get(x,y)
             if not new:
-                new=self.makeTile(x,y)
+                new=self._makeTile(x,y)
                 self.midCache.store(x,y,new)
                 self.tileCache.store(x,y,new)
                 print "replaceRenderTile",x,y
@@ -53,26 +53,26 @@ class BakeryManager(object):
         #           LRU, weighted by generation time perhaps?
     
     
-    def storeTile(self,x,y,tile):
+    def _storeTile(self,x,y,tile):
         if not self.tileCache.inbounds(x,y):
-            print "storeTile Error: tile not inbounds in tileCache",x,y
+            print "_storeTile Error: tile not inbounds in tileCache",x,y
             return
         t=self.tileCache.get(x,y)
         if t is not None:
-            print "storeTile Error: tile exists in tileCache",x,y
+            print "_storeTile Error: tile exists in tileCache",x,y
             return
         self.tileCache.store(x,y,tile)
         if self.midCache.inbounds(x,y):
             t=self.midCache.get(x,y)
             if t is not None:
-                print "storeTile Error: tile exists in midCache",x,y
+                print "_storeTile Error: tile exists in midCache",x,y
                 return
             self.midCache.store(x,y,tile)
             self.render(tile)
             if self.renderCach.inbounds(x,y):
                 t=self.renderCach.get(x,y)
                 if t is not None:
-                    print "storeTile Error: tile exists in renderCach",x,y
+                    print "_storeTile Error: tile exists in renderCach",x,y
                     return
                 self.renderCach.store(x,y,tile)
     
@@ -84,13 +84,13 @@ class BakeryManager(object):
             return self.tileCache.get(x,y) # might be none if not generated
         return None
         
-    def makeTile(self,x,y,async=False):
+    def _makeTile(self,x,y,async=False):
         tileSize=self.tileSize
         xStart=x*tileSize
         yStart=y*tileSize
         if async:
             self.asyncBaking=True
-            self.bakery.asyncGetTile(xStart, yStart, tileSize, self.asyncTileDone, (x,y))
+            self.bakery.asyncGetTile(xStart, yStart, tileSize, self._asyncTileDone, (x,y))
         else:
             self.asyncBaking=False
             return self.bakery.getTile(xStart, yStart, tileSize)
@@ -126,10 +126,10 @@ class BakeryManager(object):
                             minY=ty
                             minDistSquared=distSquared      
             if minX!=None:
-                self.makeTile(ifloor(minX),ifloor(minY),True)
+                self._makeTile(ifloor(minX),ifloor(minY),True)
         
     
-    def asyncTileDone(self,tile,x,y):
+    def _asyncTileDone(self,tile,x,y):
         if not self.asyncBaking:
             print "Bake sync error"
             return
@@ -137,11 +137,7 @@ class BakeryManager(object):
         if self.tileCache.inbounds(x,y):
             t=self.tileCache.get(x,y)
             if t is None:
-                self.storeTile(x,y,tile)
-#                 self.tileCache.store(x,y,tile)
-#                 if self.midCache.inbounds(x,y):
-#                     self.midCache.store(x,y,tile)
-#                     self.render(tile)
+                self._storeTile(x,y,tile)
     
     def render(self,tile):
         """
@@ -241,4 +237,8 @@ class ToroidalCache(object):
         return col+row*self.size
         
     def store(self,x,y,data):
+        """
+        save entry in cache.
+        if x,y is not inbounds, this will overwite some other location in the cache!
+        """
         self.data[self._cellIndex(x,y)]=data

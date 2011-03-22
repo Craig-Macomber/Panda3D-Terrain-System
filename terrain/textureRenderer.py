@@ -52,11 +52,29 @@ class Queue:
         self.queue=[]
         self.currentItem=None
         self.displayRegions={}
-        
+        self.currentBuff=None
         self.renderFrame=0
         
         taskMgr.add(self.processQueue,"processRenderTexQueue")
+    
+    def flush(self):
+        """
+        force the processing of all current items in a blocking manner
+        """
+        allBuffers=base.graphicsEngine.getWindows()
+        toActivate=[]
+        for b in allBuffers:
+            if b.isActive() and b is not self.currentBuff:
+                b.setActive(False)
+                toActivate.append(b)
+                
+        while self.queue or self.currentItem:
+            base.graphicsEngine.renderFrame()
+            self.processQueue()
         
+        for b in toActivate:
+            b.setActive(True)
+    
     def processQueue(self,task=None):
         self.renderFrame+=1
         
