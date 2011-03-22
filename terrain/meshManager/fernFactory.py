@@ -29,6 +29,8 @@ class FernFactory(gridFactory.GridFactory):
         quat=Quat()
         
         pos=Vec3(x,y,self.heightSource.height(x,y))
+        
+        random.seed((x,y))
         self.drawFern(LOD,pos, quat,drawResourcesFactory)    
     
     def drawFern(self,LOD,pos,quat,drawResourcesFactory):
@@ -81,10 +83,10 @@ class FernFactory(gridFactory.GridFactory):
                     leafResources.texcoordWriter.addData2f(1,0)
                     leafResources.texcoordWriter.addData2f(1,1)
                 else:
-                    leafResources.colorWriter.addData4f(.0,.2,.0,1)
-                    leafResources.colorWriter.addData4f(.0,.2,.0,1)
-                    leafResources.colorWriter.addData4f(.0,.2,.0,1)
-                    leafResources.colorWriter.addData4f(.0,.2,.0,1)
+                    leafResources.colorWriter.addData4f(.1,.3,.1,1)
+                    leafResources.colorWriter.addData4f(.1,.3,.1,1)
+                    leafResources.colorWriter.addData4f(.1,.3,.1,1)
+                    leafResources.colorWriter.addData4f(.1,.3,.1,1)
             
                 if x==1:
                     # back sides

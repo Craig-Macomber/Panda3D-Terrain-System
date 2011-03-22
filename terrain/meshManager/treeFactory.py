@@ -8,8 +8,8 @@ import gridFactory
 
 class TreeFactory(gridFactory.GridFactory):
     def __init__(self,heightSource,barkTexture=None,leafTexture=None):
-        self.scalar=1.0
-        self.gridSize=4.0
+        self.scalar=2.0
+        self.gridSize=2.0
         self.barkTexture=barkTexture
         self.leafTexture=leafTexture
         gridFactory.GridFactory.__init__(self,heightSource,1.0,6.0)
@@ -44,17 +44,19 @@ class TreeFactory(gridFactory.GridFactory):
         
         heightOffset=-0.4 # make sure whole bottom of tree is in ground
         pos=Vec3(x,y,self.heightSource.height(x,y)+heightOffset)
+        
+        random.seed((x,y))
         self.drawTree(LOD,(pos, quat, 0, 0, 0),drawResourcesFactory)
                
     def drawTree(self,LOD,base,drawResourcesFactory):
         exists=random.random()
-        if exists<.6: return
+        if exists<.9: return
         age=random.random()**1.5
         to = 12*age
         
         if to<6: return
         
-        dotCount=int((2/age))
+        dotCount=1#int((2/age))
         
         leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex)
         leafTri=leafResources.getGeomTriangles()
@@ -93,7 +95,7 @@ class TreeFactory(gridFactory.GridFactory):
                 
         stack = [base]
         
-        numVertices=3
+        numVertices=4
         
         #cache some info needed for placeing the vertexes
         angleData=[]
@@ -127,7 +129,7 @@ class TreeFactory(gridFactory.GridFactory):
                 if self.barkTexture is not None:
                     texWriter.addData2f(tex,sCoord) 
                 else:
-                    colorWriter.addData4f(.4,.3,.2,1)
+                    colorWriter.addData4f(.4,.3,.3,1)
             #we cant draw quads directly so we use Tristrips 
             
             if bottom: 
@@ -158,7 +160,7 @@ class TreeFactory(gridFactory.GridFactory):
                     stack.append((newPos, _randomBend(quat, 20), depth + 1, startRow, sCoord))
             else:
                 up=quat.getUp()
-                s=5.0*self.scalar
+                s=10.0*self.scalar
                 dir1=perp1*s
                 dir2=perp2*s
                 bend=-up*(s/4.0)

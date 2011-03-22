@@ -1,7 +1,7 @@
 from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat, GeomTriangles, GeomTristrips
 import math
 
-import toroidalCache
+from terrain import tileUtil
 
 """
 This module provides a MeshManager class and its assoiated classes.
@@ -24,7 +24,7 @@ However, even in pure python, reasonable performance can be achieved with this s
 """
 
 
-class LODLevel(toroidalCache.ToroidalCache):
+class LODLevel(tileUtil.ToroidalCache):
     def __init__(self,meshManager,LOD,blockSize,blockCount):
         self.meshManager=meshManager
         self.blockSize=blockSize
@@ -35,7 +35,7 @@ class LODLevel(toroidalCache.ToroidalCache):
         self.geomRequirementsCollection=None
         
         
-        toroidalCache.ToroidalCache.__init__(self,blockCount,hysteresis=.6)
+        tileUtil.ToroidalCache.__init__(self,blockCount)
     
     def addBlock(self,x,y,x2,y2):
         if self.geomRequirementsCollection is None:
@@ -85,7 +85,7 @@ class LODTransition(object):
         self.splits=splits
         
 
-class _MinLODBlockCache(toroidalCache.ToroidalCache):
+class _MinLODBlockCache(tileUtil.ToroidalCache):
     """
     Blocks gets subdivided into smaller (higher LOD) ones
     so at some point, there has to be a lowest level, and this manages it.
@@ -100,7 +100,7 @@ class _MinLODBlockCache(toroidalCache.ToroidalCache):
         self.geomRequirementsCollection=None
         
         
-        toroidalCache.ToroidalCache.__init__(self,blockCount,hysteresis=.6)
+        tileUtil.ToroidalCache.__init__(self,blockCount,self.replaceValue,hysteresis=.6)
     
     def addBlock(self,x,y,x2,y2):
         if self.geomRequirementsCollection is None:
@@ -147,7 +147,7 @@ class MeshManager(NodePath):
     def __init__(self,factories,LODTransitions=None):
         self.factories=factories
         NodePath.__init__(self,"MeshManager")
-        self.LODLevels=[_MinLODBlockCache(self,1,16,9)]
+        self.LODLevels=[_MinLODBlockCache(self,1,25,9)]
         
         self.LODTransitions=LODTransitions
         

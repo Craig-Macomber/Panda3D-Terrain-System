@@ -3,12 +3,15 @@ import math
 from renderer import RenderNode
 from terrain.bakery.bakery import loadTex
 
+
 from panda3d.core import *
-#from terrain.textureRenderer import *
+from direct.task.Task import Task
+
+from terrain import tileUtil
 
 class RenderTiler(RenderNode):
-    def __init__(self,path):
-        RenderNode.__init__(self,path,NodePath(path+"_terrainNode"))
+    def __init__(self,path,heightScale):
+        RenderNode.__init__(self,path,NodePath(path+"_terrainNode"),heightScale)
         
         # Add a task to keep updating the terrain
         taskMgr.add(self.updateTask, "update")
@@ -40,8 +43,8 @@ class RenderTiler(RenderNode):
 useBruteForce=True
 
 class RenderAutoTiler(RenderTiler):
-    def __init__(self,path,tileSource,tileScale,focus,addThreshold=1.0,removeThreshold=1.8,):
-        RenderTiler.__init__(self,path)        
+    def __init__(self,path,tileSource,tileScale,focus,addThreshold=1.0,removeThreshold=1.8,heightScale=300):
+        RenderTiler.__init__(self,path,heightScale)        
         self.tileSource=tileSource
         self.tileScale=tileScale
         self.tilesMade=0
@@ -154,13 +157,87 @@ class RenderAutoTiler(RenderTiler):
                     '''
         #print "Find height Failed"
         return 0
+
+
+
+class RenderAutoTiler2(RenderTiler):
+    def __init__(self,path,tileSource,tileScale,focus,addThreshold=3,removeThreshold=4,heightScale=100):
+        RenderTiler.__init__(self,path,heightScale)        
+        self.tileSource=tileSource
+        self.tileScale=tileScale
+        self.tilesMade=0
+        self.addThreshold=addThreshold
+        self.removeThreshold=removeThreshold
+        self.focus=focus
         
+        self.renderTileBakery=RenderTileBakery(tileSource,self)
+        
+        cacheSize=removeThreshold
+        x,y=self.focuseLoc()
+        self.bakeryManager=tileUtil.BakeryManager(self.terrainNode,
+            self.renderTileBakery,tileScale,
+            addThreshold,removeThreshold,cacheSize,
+            x,y)
+        
+        # Add a task to keep updating the terrain
+        taskMgr.add(self.updateTiles, "updateTiles")
+    def focuseLoc(self):
+        p=self.focus.getPos(self)
+        return p.getX(),p.getY()
+    
+    def updateTiles(self,task):
+        self.bakeryManager.updateCenter(*self.focuseLoc())
+        return Task.cont
+            
+            
+    def height(self,x,y):
+        t=self.bakeryManager.getTile(x,y)
+        if t is not None:
+            xDif=x-t.getX()
+            if xDif>=0 and xDif<=self.tileScale:
+                yDif=y-t.getY()
+                if yDif>=0 and yDif<=self.tileScale:
+        
+                    # found correct tile
+                    h=t.terrain.heightfield()
+                    mapSize=h.getXSize()
+                    s=(mapSize-1)/self.tileScale
+                    xLoc=min(mapSize,max(0,xDif*s))
+                    yLoc=min(mapSize,max(0,yDif*s))
+                    
+                    return t.terrain.getElevation(xLoc,yLoc)*self.heightScale
+
+        #print "Find height Failed"
+        return 0
+
+
+class RenderTileBakery(object):
+    """
+    A class the wraps a bakery to produce RenderTiles instead of baked tiles
+    """
+    def __init__(self,bakery,renderNode):
+        self.bakery=bakery
+        self.hasTile=bakery.hasTile
+        self.renderNode=renderNode
+        
+    def getTile(self, xStart, yStart, tileSize):
+        return RenderTile(self.bakery.getTile(xStart, yStart, tileSize),self.renderNode)
+    
+    def asyncGetTile(self, xStart, yStart, tileSize, callback, callbackParams=()):
+        self.bakery.asyncGetTile(xStart, yStart, tileSize, self._asyncTileDone, (callback,callbackParams))
+        
+    def _asyncTileDone(self,tile,callback,callbackParams):
+        callback(RenderTile(tile,self.renderNode),*callbackParams)
+
 class RenderTile(NodePath):
     def __init__(self,bakedTile,node):
+        """
+        node = the renderNode this is for
+        """
         self.bakedTile=bakedTile
         
         NodePath.__init__(self,"renderTile")
-        NodePath.setPythonTag(self, "subclass", self)
+        self.setPythonTag("subclass", self)
         self.setPos(bakedTile.x,bakedTile.y,0)
         
         self.tileScale=bakedTile.scale

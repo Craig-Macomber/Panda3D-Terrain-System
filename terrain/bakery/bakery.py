@@ -12,13 +12,15 @@ class Bakery:
         """
         raise NotImplementedError()
     
-    def asyncGetTile(self, xStart, yStart, tileSize, callback, callbackParams=[]):
+    def asyncGetTile(self, xStart, yStart, tileSize, callback, callbackParams=()):
         """
         like getTile, but calls callback(tile,*callbackParams) when done
         """
         raise NotImplementedError()
         #callback(self.getTile(xStart, yStart, tileSize),*callbackParams)
     
+
+
 
 class Tile:
     """

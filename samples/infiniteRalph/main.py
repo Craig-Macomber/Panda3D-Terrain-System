@@ -24,7 +24,7 @@ sampleDir="samples/infiniteRalph/"
 import terrain
 import terrain.bakery.animate_dreams_bakery
 import terrain.bakery.gpuBakery
-from terrain.renderer.renderTiler import RenderAutoTiler
+from terrain.renderer.renderTiler import RenderAutoTiler2
 from terrain.renderer.geoClipMapper import GeoClipMapper
 from terrain.bakery.bakery import loadTex
 import water
@@ -36,15 +36,15 @@ backBinName="background"
 
 ############## Configure! ##############
 #rendererClass=GeoClipMapper
-rendererClass=RenderAutoTiler
-if rendererClass==RenderAutoTiler:
+rendererClass=RenderAutoTiler2
+if rendererClass==RenderAutoTiler2:
     #selectedBakery = terrain.bakery.animate_dreams_bakery.ADBakery ; rendererFolder=sampleDir+'renderTilerSimple'
     selectedBakery = terrain.bakery.gpuBakery.GpuBakery ; rendererFolder=sampleDir+'renderTiler'
     useLowLOD=False
     useMidLOD=False
 enableMeshes=True
 mouseControl=False
-enableWater=False
+enableWater=True
 ############## Configure! ##############
 
 
@@ -76,7 +76,7 @@ else:
     # Create a bakery that uses the "bakeryTiler" folder for its resources
     b = selectedBakery(None,sampleDir+"bakeryTiler")
     #Make the main (highest LOD) tiler
-    n=RenderAutoTiler(rendererFolder,b,tileSize,focus,2.5,2.8)
+    n=rendererClass(rendererFolder,b,tileSize,focus,2,3,heightScale=300)
     if enableWater: waterNode = water.WaterNode( -100, -100, 200, 200, 0.1*n.heightScale)
     
     

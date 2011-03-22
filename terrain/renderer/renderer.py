@@ -15,10 +15,10 @@ GeoClipMapper -
 """
 
 class RenderNode(NodePath):
-    def __init__(self,path,terrainNode):
+    def __init__(self,path,terrainNode,heightScale):
         NodePath.__init__(self,path+"_render")
         
-        self.heightScale=300.0
+        self.heightScale=heightScale
         
         d=parseFile(path+'/texList.txt')
         

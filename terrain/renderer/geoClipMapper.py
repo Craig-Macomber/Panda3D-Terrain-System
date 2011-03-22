@@ -10,7 +10,7 @@ from panda3d.core import *
 
 class GeoClipMapper(RenderNode):
     def __init__(self,path,tileSource,minScale,focus):
-        RenderNode.__init__(self,path,NodePath(path+"_terrainNode"))
+        RenderNode.__init__(self,path,NodePath(path+"_terrainNode"),heightScale=300.0)
         
         heightMapName=self.specialMaps['height']
         self.heightMapRez=0

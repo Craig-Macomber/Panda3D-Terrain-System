@@ -1,7 +1,7 @@
 from bakery import parseFile,Tile,loadTex,Map,Bakery
 
 from panda3d.core import CardMaker,OrthographicLens,NodePath,Camera,TextureStage,Shader,Texture
-from terrain.textureRenderer import Queue,QueueItem
+from terrain.textureRenderer import Queue,QueueItem,SimpleQueueItem
 
 qq=Queue()
 
@@ -205,13 +205,13 @@ class GpuBakery(Bakery):
         
         q=QueueItem(size,size,self._asyncRenderMapDone,self.getRenderMapCam, (callback,shader.name,callbackParams), (rawTile, inputMaps, shader, size),toRam=toRam)
         qq.queue.append(q)
-    
+        
     def _asyncRenderMapDone(self,tex,callback,name,callbackParams):
         tex.setWrapU(Texture.WMClamp)
         tex.setWrapV(Texture.WMClamp)
         callback(Map(name,tex),*callbackParams)
     
-    def renderMap(self, rawTile, inputMaps, shader):
+    def renderMap(self, rawTile, inputMaps, shader, toRam=False):
         """
         
         This is where the map images are genrated.
@@ -220,21 +220,22 @@ class GpuBakery(Bakery):
         
         """
         
-        # Resolution of texture/buffer to be rendered
-        size=shader.getRez(tileMapSize)
+        # TODO: It is prabably horrible how this works
+        # It should not just use asyncRenderMap then block several frames until done.
         
+        done=[False]
+        tex=[0]
+        def doneFunc(ttex):
+            tex[0]=ttex
+            done[0]=True
+            
+        self.asyncRenderMap(rawTile, inputMaps, shader, doneFunc, toRam=toRam)
         
-        altCam=self.getRenderMapCam(rawTile, inputMaps, shader, size)
-        
-        q=SimpleQueueItem(size,size,None,altCam,toRam=True)
-        
-        tex= qq.renderTex(q)
-        self.mapCard.remove()
-        
-        tex.setWrapU(Texture.WMClamp)
-        tex.setWrapV(Texture.WMClamp)
-        
-        return Map(shader.name,tex)
+        while not done[0]:
+            qq.processQueue()
+            base.graphicsEngine.renderFrame()
+
+        return tex[0]
         
     def hasTile(self, xStart, yStart, tileSize):
         """If one is using a cashed tile source instead of a live bakery, this would be sometimes be false"""
@@ -313,7 +314,7 @@ class _RawTile:
             inputMaps=[]
             for m in s.inputMapNames:
                 inputMaps.append(maps[m])
-            maps[s.name]=bakery.renderMap(self,inputMaps,s)
+            maps[s.name]=bakery.renderMap(self,inputMaps,s,True)
         
         return self._tileFromMaps(bakery, maps)
 

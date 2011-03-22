@@ -57,7 +57,7 @@ class Queue:
         
         taskMgr.add(self.processQueue,"processRenderTexQueue")
         
-    def processQueue(self,task):
+    def processQueue(self,task=None):
         self.renderFrame+=1
         
         if self.currentItem is None:
