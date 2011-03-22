@@ -9,7 +9,7 @@ import gridFactory
 class FernFactory(gridFactory.GridFactory):
     def __init__(self,heightSource,leafTexture=None):
         self.leafTexture=leafTexture
-        gridFactory.GridFactory.__init__(self,heightSource,.2,12.0)
+        gridFactory.GridFactory.__init__(self,heightSource,.25,14.0)
         
     def regesterGeomRequirements(self,LOD,collection):
         if self.leafTexture:
