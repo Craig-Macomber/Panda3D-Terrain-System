@@ -161,22 +161,22 @@ class RenderAutoTiler(RenderTiler):
 
 
 class RenderAutoTiler2(RenderTiler):
-    def __init__(self,path,tileSource,tileScale,focus,addThreshold=3,removeThreshold=4,heightScale=100):
+    def __init__(self,path,tileSource,tileScale,focus,forceRenderedCount=2,maxRenderedCount=4,heightScale=100):
         RenderTiler.__init__(self,path,heightScale)        
         self.tileSource=tileSource
         self.tileScale=tileScale
         self.tilesMade=0
-        self.addThreshold=addThreshold
-        self.removeThreshold=removeThreshold
+        self.forceRenderedCount=forceRenderedCount
+        self.maxRenderedCount=maxRenderedCount
         self.focus=focus
         
         self.renderTileBakery=RenderTileBakery(tileSource,self)
         
-        cacheSize=removeThreshold
+        cacheSize=maxRenderedCount
         x,y=self.focuseLoc()
         self.bakeryManager=tileUtil.BakeryManager(self.terrainNode,
             self.renderTileBakery,tileScale,
-            addThreshold,removeThreshold,cacheSize,
+            forceRenderedCount,maxRenderedCount,cacheSize,
             x,y)
         
         # Add a task to keep updating the terrain
