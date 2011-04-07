@@ -9,7 +9,7 @@ import gridFactory
 class FernFactory(gridFactory.GridFactory):
     def __init__(self,heightSource,leafTexture=None):
         self.leafTexture=leafTexture
-        gridFactory.GridFactory.__init__(self,heightSource,.25,14.0)
+        gridFactory.GridFactory.__init__(self,heightSource,.25,30.0)
         
     def regesterGeomRequirements(self,LOD,collection):
         if self.leafTexture:
@@ -35,7 +35,7 @@ class FernFactory(gridFactory.GridFactory):
     
     def drawFern(self,LOD,pos,quat,drawResourcesFactory):
         exists=random.random()
-        if exists<.8: return
+        if exists<.6: return
         scalar=random.random()
         scale=scalar**.3
         

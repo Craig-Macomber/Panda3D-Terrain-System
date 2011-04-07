@@ -147,7 +147,7 @@ class MeshManager(NodePath):
     def __init__(self,factories,LODTransitions=None):
         self.factories=factories
         NodePath.__init__(self,"MeshManager")
-        self.LODLevels=[_MinLODBlockCache(self,1,25,9)]
+        self.LODLevels=[_MinLODBlockCache(self,1,50,9)]
         
         self.LODTransitions=LODTransitions
         

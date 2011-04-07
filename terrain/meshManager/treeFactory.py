@@ -12,7 +12,7 @@ class TreeFactory(gridFactory.GridFactory):
         self.gridSize=2.0
         self.barkTexture=barkTexture
         self.leafTexture=leafTexture
-        gridFactory.GridFactory.__init__(self,heightSource,1.0,6.0)
+        gridFactory.GridFactory.__init__(self,heightSource,1.0,3.0)
     
     def regesterGeomRequirements(self,LOD,collection):
         if self.barkTexture is not None:
@@ -95,11 +95,16 @@ class TreeFactory(gridFactory.GridFactory):
                 
         stack = [base]
         
-        numVertices=4
+        numVertices=3
         
         #cache some info needed for placeing the vertexes
         angleData=[]
-        for i in xrange(numVertices+1):  #doubles the last vertex to fix UV seam
+        if self.barkTexture:
+            vNum=numVertices+1
+        else:
+            vNum=numVertices
+        
+        for i in xrange(vNum):  #doubles the last vertex to fix UV seam
             angle=-2 * i * math.pi / numVertices
             angleData.append((math.cos(angle),math.sin(angle),1.0*i / numVertices))
         
@@ -136,9 +141,9 @@ class TreeFactory(gridFactory.GridFactory):
                 bottom=False
             else:
                          
-                for i in xrange(numVertices+1): 
+                for i in xrange(vNum): 
                     lines.addVertices(i + previousRow,i + startRow)
-                lines.addVertices(previousRow,startRow)
+                if not self.barkTexture: lines.addVertices(previousRow,startRow)
                 lines.closePrimitive()
             
             if depth + 1 < len(lengthList):
@@ -159,6 +164,9 @@ class TreeFactory(gridFactory.GridFactory):
                     #just make another branch connected to this one with a small variation in direction 
                     stack.append((newPos, _randomBend(quat, 20), depth + 1, startRow, sCoord))
             else:
+                q=Quat()
+                q.setHpr((random.random()*2*math.pi,0,0))
+                quat=quat*q
                 up=quat.getUp()
                 s=10.0*self.scalar
                 dir1=perp1*s
