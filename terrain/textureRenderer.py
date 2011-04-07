@@ -2,6 +2,8 @@ from panda3d.core import Texture
 from panda3d.core import GraphicsOutput
 from direct.task.Task import Task
 from panda3d.core import FrameBufferProperties
+
+import collections
 """
 
 This is intended to serve is a queueing system for one shot rendering to textures.
@@ -49,7 +51,7 @@ class SimpleQueueItem(QueueItem):
 class Queue:
     def __init__(self):
         self.buffs={}
-        self.queue=[]
+        self.queue=collections.deque()
         self.currentItem=None
         self.displayRegions={}
         self.currentBuff=None
@@ -81,7 +83,7 @@ class Queue:
         if self.currentItem is None:
             if len(self.queue) > 0:
                 # Process a queue item!
-                self.currentItem=self.queue.pop(0)
+                self.currentItem=self.queue.popleft()
                 self.renderFrame=0
 
                 self.currentBuff=self.getBuff(self.currentItem.width,self.currentItem.height)
