@@ -8,3 +8,4 @@ pstats-host 192.168.71.4
 #pstats-tasks 1
 allow-incomplete-render #f
 basic-shaders-only #f
+osx-support-gl-buffer #t
