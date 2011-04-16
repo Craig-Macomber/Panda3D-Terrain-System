@@ -38,7 +38,7 @@ class RenderNode(NodePath):
         self.terrainNode=terrainNode
         self.terrainNode.reparentTo(self)
         #self.terrainNode.setShader(loader.loadShader(path+"/render.sha"))
-        self.terrainNode.setShaderAuto()
+        #self.terrainNode.setShaderAuto()
         
         # List on non map texture stages, and their sizes
         # (TexStage,Size)

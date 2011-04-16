@@ -7,9 +7,9 @@ import gridFactory
 
 
 class FernFactory(gridFactory.GridFactory):
-    def __init__(self,heightSource,leafTexture=None):
+    def __init__(self,leafTexture=None):
         self.leafTexture=leafTexture
-        gridFactory.GridFactory.__init__(self,heightSource,.25,30.0)
+        gridFactory.GridFactory.__init__(self,.25,30.0)
         
     def regesterGeomRequirements(self,LOD,collection):
         if self.leafTexture:
@@ -25,17 +25,16 @@ class FernFactory(gridFactory.GridFactory):
         
         self.leafDataIndex=collection.add(leafRequirements)
     
-    def drawItem(self,LOD,x,y,drawResourcesFactory):
+    def drawItem(self,LOD,x,y,drawResourcesFactory,tile):
+        random.seed((x,y))
+        exists=random.random()
+        if exists<.6: return
         quat=Quat()
         
-        pos=Vec3(x,y,self.heightSource.height(x,y))
-        
-        random.seed((x,y))
+        pos=Vec3(x,y,tile.height(x,y))
         self.drawFern(LOD,pos, quat,drawResourcesFactory)    
     
     def drawFern(self,LOD,pos,quat,drawResourcesFactory):
-        exists=random.random()
-        if exists<.6: return
         scalar=random.random()
         scale=scalar**.3
         
@@ -43,6 +42,13 @@ class FernFactory(gridFactory.GridFactory):
         
         leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex)
         leafTri=leafResources.getGeomTriangles()
+        vertexWriter=leafResources.getWriter("vertex")
+        normalWriter=leafResources.getWriter("normal")
+        
+        if self.leafTexture:
+            texcoordWriter = leafResources.getWriter("texcoord")
+        else:
+            colorWriter = leafResources.getWriter("color")
         
         count=int((scalar**.7)*12)
         
@@ -69,24 +75,24 @@ class FernFactory(gridFactory.GridFactory):
             norm1.normalize()
             
             for x in range(2):
-                leafRow = leafResources.vertexWriter.getWriteRow()
+                leafRow = vertexWriter.getWriteRow()
             
-                leafResources.vertexWriter.addData3f(pos)
-                leafResources.vertexWriter.addData3f(pos+f+r)
-                leafResources.vertexWriter.addData3f(pos+f-r)
-                leafResources.vertexWriter.addData3f(pos+f2)
+                vertexWriter.addData3f(pos)
+                vertexWriter.addData3f(pos+f+r)
+                vertexWriter.addData3f(pos+f-r)
+                vertexWriter.addData3f(pos+f2)
                 
                 
                 if self.leafTexture:
-                    leafResources.texcoordWriter.addData2f(0,0)
-                    leafResources.texcoordWriter.addData2f(0,1)
-                    leafResources.texcoordWriter.addData2f(1,0)
-                    leafResources.texcoordWriter.addData2f(1,1)
+                    texcoordWriter.addData2f(0,0)
+                    texcoordWriter.addData2f(0,1)
+                    texcoordWriter.addData2f(1,0)
+                    texcoordWriter.addData2f(1,1)
                 else:
-                    leafResources.colorWriter.addData4f(.1,.3,.1,1)
-                    leafResources.colorWriter.addData4f(.1,.3,.1,1)
-                    leafResources.colorWriter.addData4f(.1,.3,.1,1)
-                    leafResources.colorWriter.addData4f(.1,.3,.1,1)
+                    colorWriter.addData4f(.1,.3,.1,1)
+                    colorWriter.addData4f(.1,.3,.1,1)
+                    colorWriter.addData4f(.1,.3,.1,1)
+                    colorWriter.addData4f(.1,.3,.1,1)
             
                 if x==1:
                     # back sides
@@ -99,7 +105,7 @@ class FernFactory(gridFactory.GridFactory):
                     leafTri.addVertices(leafRow,leafRow+1,leafRow+2)
                     leafTri.addVertices(leafRow+1,leafRow+3,leafRow+2)
                     
-                leafResources.normalWriter.addData3f(norm0)
-                leafResources.normalWriter.addData3f(norm1) 
-                leafResources.normalWriter.addData3f(norm1) 
-                leafResources.normalWriter.addData3f(norm2)
+                normalWriter.addData3f(norm0)
+                normalWriter.addData3f(norm1) 
+                normalWriter.addData3f(norm1) 
+                normalWriter.addData3f(norm2)

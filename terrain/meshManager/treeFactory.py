@@ -7,12 +7,10 @@ import gridFactory
 
 
 class TreeFactory(gridFactory.GridFactory):
-    def __init__(self,heightSource,barkTexture=None,leafTexture=None):
-        self.scalar=2.0
-        self.gridSize=2.0
+    def __init__(self,barkTexture=None,leafTexture=None):
         self.barkTexture=barkTexture
         self.leafTexture=leafTexture
-        gridFactory.GridFactory.__init__(self,heightSource,1.0,3.0)
+        gridFactory.GridFactory.__init__(self,2.0,5.0)
     
     def regesterGeomRequirements(self,LOD,collection):
         if self.barkTexture is not None:
@@ -39,18 +37,20 @@ class TreeFactory(gridFactory.GridFactory):
         self.trunkDataIndex=collection.add(trunkRequirements)
         self.leafDataIndex=collection.add(leafRequirements)
     
-    def drawItem(self,LOD,x,y,drawResourcesFactory):
+    def drawItem(self,LOD,x,y,drawResourcesFactory,tile):
+        random.seed((x,y))
+        exists=random.random()
+        if exists<.9: return
+        
         quat=Quat()
         
         heightOffset=-0.4 # make sure whole bottom of tree is in ground
-        pos=Vec3(x,y,self.heightSource.height(x,y)+heightOffset)
+        pos=Vec3(x,y,tile.height(x,y)+heightOffset)
         
-        random.seed((x,y))
         self.drawTree(LOD,(pos, quat, 0, 0, 0),drawResourcesFactory)
                
     def drawTree(self,LOD,base,drawResourcesFactory):
-        exists=random.random()
-        if exists<.9: return
+        
         age=random.random()**1.5
         to = 12*age
         
@@ -62,12 +62,22 @@ class TreeFactory(gridFactory.GridFactory):
         leafTri=leafResources.getGeomTriangles()
         trunkResources=drawResourcesFactory.getDrawResources(self.trunkDataIndex)
         lines = trunkResources.getGeomTristrips()
-        vertWriter = trunkResources.vertexWriter
-        normalWriter = trunkResources.normalWriter
+        vertWriter = trunkResources.getWriter("vertex")
+        normalWriter = trunkResources.getWriter("normal")
         if self.barkTexture:
-            texWriter = trunkResources.texcoordWriter
+            texWriter = trunkResources.getWriter("texcoord")
         else:
-            colorWriter = trunkResources.colorWriter
+            colorWriter = trunkResources.getWriter("color")
+        
+        
+        leafVertexWriter=leafResources.getWriter("vertex")
+        leafNormalWriter=leafResources.getWriter("normal")
+        
+        if self.leafTexture:
+            leafTexcoordWriter = leafResources.getWriter("texcoord")
+        else:
+            leafColorWriter = leafResources.getWriter("color")
+        
         
         maxbend=40+random.random()*20
         
@@ -184,22 +194,22 @@ class TreeFactory(gridFactory.GridFactory):
                 norm2.normalize()
                 
                 for x in range(2):
-                    leafRow = leafResources.vertexWriter.getWriteRow()
-                    leafResources.vertexWriter.addData3f(v0)
-                    leafResources.vertexWriter.addData3f(v1)
-                    leafResources.vertexWriter.addData3f(v2)
-                    leafResources.vertexWriter.addData3f(v3)
+                    leafRow = leafVertexWriter.getWriteRow()
+                    leafVertexWriter.addData3f(v0)
+                    leafVertexWriter.addData3f(v1)
+                    leafVertexWriter.addData3f(v2)
+                    leafVertexWriter.addData3f(v3)
                     if self.leafTexture is not None:
                         n=dotCount
-                        leafResources.texcoordWriter.addData2f(0,0)
-                        leafResources.texcoordWriter.addData2f(0,n)
-                        leafResources.texcoordWriter.addData2f(n,n)
-                        leafResources.texcoordWriter.addData2f(n,0)
+                        leafTexcoordWriter.addData2f(0,0)
+                        leafTexcoordWriter.addData2f(0,n)
+                        leafTexcoordWriter.addData2f(n,n)
+                        leafTexcoordWriter.addData2f(n,0)
                     else:
-                        leafResources.colorWriter.addData4f(.5,.4,.0,1)
-                        leafResources.colorWriter.addData4f(.0,.4,.0,1)
-                        leafResources.colorWriter.addData4f(.5,.4,.0,1)
-                        leafResources.colorWriter.addData4f(.0,.4,.0,1)
+                        leafColorWriter.addData4f(.5,.4,.0,1)
+                        leafColorWriter.addData4f(.0,.4,.0,1)
+                        leafColorWriter.addData4f(.5,.4,.0,1)
+                        leafColorWriter.addData4f(.0,.4,.0,1)
                     
                     if x==1:
                         # back sides
@@ -212,10 +222,10 @@ class TreeFactory(gridFactory.GridFactory):
                         leafTri.addVertices(leafRow,leafRow+1,leafRow+2)
                         leafTri.addVertices(leafRow,leafRow+2,leafRow+3)
                         
-                    leafResources.normalWriter.addData3f(up)
-                    leafResources.normalWriter.addData3f(norm1) 
-                    leafResources.normalWriter.addData3f(up) 
-                    leafResources.normalWriter.addData3f(norm2)
+                    leafNormalWriter.addData3f(up)
+                    leafNormalWriter.addData3f(norm1) 
+                    leafNormalWriter.addData3f(up) 
+                    leafNormalWriter.addData3f(norm2)
 
 #this is for making the tree not too straight 
 def _randomBend(inQuat, maxAngle=20):

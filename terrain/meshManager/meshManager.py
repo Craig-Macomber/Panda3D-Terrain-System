@@ -24,51 +24,51 @@ However, even in pure python, reasonable performance can be achieved with this s
 """
 
 
-class LODLevel(tileUtil.ToroidalCache):
-    def __init__(self,meshManager,LOD,blockSize,blockCount):
-        self.meshManager=meshManager
-        self.blockSize=blockSize
-        self.LOD=LOD
-        #self.blockCount=blockCount
-        
-        
-        self.geomRequirementsCollection=None
-        
-        
-        tileUtil.ToroidalCache.__init__(self,blockCount)
-    
-    def addBlock(self,x,y,x2,y2):
-        if self.geomRequirementsCollection is None:
-            self.geomRequirementsCollection=GeomRequirementsCollection()
-            for c in self.meshManager.factories:
-                c.regesterGeomRequirements(self.LOD,self.geomRequirementsCollection)
-        
-        drawResourcesFactory=self.geomRequirementsCollection.getDrawResourcesFactory()
-        if drawResourcesFactory is None: return None
-        
-        for c in self.meshManager.factories:
-            c.draw(self.LOD,x,y,x2,y2,drawResourcesFactory)
-        
-        
-        nodePath=drawResourcesFactory.getNodePath()
-        
-        if nodePath is None: return
-        
-        block=_MeshBlock(self.LOD,x,y,x2,y2)
-        nodePath.reparentTo(self.meshManager)
-        nodePath.setPythonTag("_MeshBlock",block)
-        return nodePath
-
-    
-    def replaceValue(self,x,y,old):
-        if old is not None:
-            old.removeNode()
-            #old.setPythonTag("_MeshBlock",None)
-        s=self.blockSize
-        return self.addBlock(x*s,y*s,(x+1)*s,(y+1)*s)
-    def update(self,pos):
-        p=pos*(1.0/self.blockSize)
-        self.updateCenter(p.getX(),p.getY())
+# class LODLevel(tileUtil.ToroidalCache):
+#     def __init__(self,meshManager,LOD,blockSize,blockCount):
+#         self.meshManager=meshManager
+#         self.blockSize=blockSize
+#         self.LOD=LOD
+#         #self.blockCount=blockCount
+#         
+#         
+#         self.geomRequirementsCollection=None
+#         
+#         
+#         tileUtil.ToroidalCache.__init__(self,blockCount)
+#     
+#     def addBlock(self,x,y,x2,y2):
+#         if self.geomRequirementsCollection is None:
+#             self.geomRequirementsCollection=GeomRequirementsCollection()
+#             for c in self.meshManager.factories:
+#                 c.regesterGeomRequirements(self.LOD,self.geomRequirementsCollection)
+#         
+#         drawResourcesFactory=self.geomRequirementsCollection.getDrawResourcesFactory(None)
+#         if drawResourcesFactory is None: return None
+#         
+#         for c in self.meshManager.factories:
+#             c.draw(self.LOD,x,y,x2,y2,drawResourcesFactory)
+#         
+#         
+#         nodePath=drawResourcesFactory.getNodePath()
+#         
+#         if nodePath is None: return
+#         
+#         block=_MeshBlock(self.LOD,x,y,x2,y2)
+#         nodePath.reparentTo(self.meshManager)
+#         nodePath.setPythonTag("_MeshBlock",block)
+#         return nodePath
+# 
+#     
+#     def replaceValue(self,x,y,old):
+#         if old is not None:
+#             old.removeNode()
+#             #old.setPythonTag("_MeshBlock",None)
+#         s=self.blockSize
+#         return self.addBlock(x*s,y*s,(x+1)*s,(y+1)*s)
+#     def update(self,pos):
+#         p=pos*(1.0/self.blockSize)
+#         self.updateCenter(p.getX(),p.getY())
 
 
 class LODTransition(object):
@@ -81,8 +81,14 @@ class LODTransition(object):
         
         if 
         """
-        self.LOD=LOD
-        self.splits=splits
+        self.mergeThreshold=mergeThreshold
+        self.splitThreshold=splitThreshold
+    def needsHigher(self,LOD):
+        """
+        if the passed LOD value means one should transition
+        from the low LOD side of this transition to the hight LOD side, returns true
+        """
+        return LOD>splitThreshold
         
 
 class _MinLODBlockCache(tileUtil.ToroidalCache):
@@ -102,13 +108,13 @@ class _MinLODBlockCache(tileUtil.ToroidalCache):
         
         tileUtil.ToroidalCache.__init__(self,blockCount,self.replaceValue,hysteresis=.6)
     
-    def addBlock(self,x,y,x2,y2):
+    def addBlock(self,x,y,x2,y2,tile):
         if self.geomRequirementsCollection is None:
             self.geomRequirementsCollection=GeomRequirementsCollection()
             for c in self.meshManager.factories:
                 c.regesterGeomRequirements(self.LOD,self.geomRequirementsCollection)
         
-        drawResourcesFactory=self.geomRequirementsCollection.getDrawResourcesFactory()
+        drawResourcesFactory=self.geomRequirementsCollection.getDrawResourcesFactory(tile)
         if drawResourcesFactory is None: return None
         
         for c in self.meshManager.factories:
@@ -136,7 +142,33 @@ class _MinLODBlockCache(tileUtil.ToroidalCache):
         self.updateCenter(p.getX(),p.getY())
 
 
+class LODLevel(object):
+    def __init__(self,higher,lower,factories):
+        self.factories=factories
+        self.geomRequirementsCollection=GeomRequirementsCollection()
+        self.higher=higher # LODTransition
+        self.lower=lower # LODTransition
+        self.factories=factories
+        for c in factories:
+            c.regesterGeomRequirements(self,self.geomRequirementsCollection)
+    
+    def makeTile(self,x,y,x2,y2,tile):
+        drawResourcesFactory=self.geomRequirementsCollection.getDrawResourcesFactory(tile)
+        if drawResourcesFactory is None: return None
+        
+        for c in self.factories:
+            c.draw(self,x,y,x2,y2,drawResourcesFactory)
+        
+        
+        nodePath=drawResourcesFactory.getNodePath()
+        
+        if nodePath is None: return
+        
+        block=_MeshBlock(self,x,y,x2,y2)
+        nodePath.setPythonTag("_MeshBlock",block)
+        return nodePath
 
+        
     
 class MeshManager(NodePath):
     """
@@ -144,20 +176,31 @@ class MeshManager(NodePath):
     
     meshes come from passed in factories
     """
-    def __init__(self,factories,LODTransitions=None):
+    def __init__(self,factories,LODTransitions=[]):
         self.factories=factories
-        NodePath.__init__(self,"MeshManager")
-        self.LODLevels=[_MinLODBlockCache(self,1,50,9)]
-        
         self.LODTransitions=LODTransitions
+        self.LODLevels=[]
+        ntrans=[None]+LODTransitions+[None]
+        for i in xrange(len(ntrans)-1):
+            self.LODLevels.append(LODLevel(ntrans[i],ntrans[i+1],factories))
         
+    def getLODLevel(self,LOD,oldLODLevel=None):
+        """
+        if oldLODLevel is not None, this will return None if the LOD should not be transitioned,
         
-    def update(self,focuseNode):
-        pos=focuseNode.getPos(self)
-        for l in self.LODLevels:
-            l.update(pos)
+        otherwise, returns the lowest valid LODLevel
+        """
+        levelIndex=0
+        while True:
+            level=self.LODLevels[levelIndex]
+            if level.higher is None:
+                return level # reached the max LOD, cant go higher
+            else:
+                if level.higher.needsHigher(LOD):
+                    levelIndex+=1
+                else:
+                    return level
         
-
     
 class _MeshBlock(object):
     """
@@ -200,11 +243,12 @@ class GeomRequirements(object):
     this will get translated to a single geom, or a nodePath as needed,
     and merged with matching requirements
     """
-    def __init__(self,geomVertexFormat,texture=None,transparency=False,shaderSettings=None):
+    def __init__(self,geomVertexFormat,texture=None,transparency=False,shaderSettings=None,maps=None):
         self.geomVertexFormat=geomVertexFormat
         self.texture=texture
         self.transparency=transparency
-        self.shaderSettings=[] if shaderSettings is None else shaderSettings 
+        self.shaderSettings=[] if shaderSettings is None else shaderSettings
+        self.maps=[] if maps is None else maps 
     def __eq__(self,other):
          return False # TODO
 
@@ -214,18 +258,33 @@ class DrawResources(object):
     this provides the needed objects for outputting meshes.
     the resources provided match the corosponding GeomRequirements this was constructed with
     """
-    def __init__(self,geomNode,geomRequirements):
-        vdata = GeomVertexData("verts", geomRequirements.geomVertexFormat, Geom.UHStatic) 
-        geomNode.addGeom(Geom(vdata))
-        self.geom=geomNode.modifyGeom(0)
-                
-        self.vertexWriter = GeomVertexWriter(vdata, "vertex") 
-        self.normalWriter = GeomVertexWriter(vdata, "normal") 
-        self.texcoordWriter = GeomVertexWriter(vdata, "texcoord")
-        self.colorWriter = GeomVertexWriter(vdata, "color")
+    def __init__(self,geomNodePath,geomRequirements):
+        self.geom=None
+        self.nodePath=geomNodePath
+        self.node=geomNodePath.node()
+        self.geomRequirements=geomRequirements
+        
+        self.writers={}
+        
         self._geomTriangles = None
         self._geomTristrips = None
-        
+    
+    def _getGeom(self):
+        if self.geom is None:
+            self.vdata = GeomVertexData("verts", self.geomRequirements.geomVertexFormat, Geom.UHStatic) 
+            self.node.addGeom(Geom(self.vdata))
+            self.geom=self.node.modifyGeom(self.node.getNumGeoms()-1)
+        return self.geom
+    
+    def getWriter(self,name):
+        if name not in self.writers:
+            g=self._getGeom()
+            self.writers[name] = GeomVertexWriter(self.vdata, name)
+        return self.writers[name]
+    
+    def arrachNode(self,nodePath):
+        nodePath.reparentTo(self.nodePath)
+    
     def getGeomTriangles(self):
         if self._geomTriangles is None:
             self._geomTriangles = GeomTriangles(Geom.UHStatic)
@@ -238,9 +297,11 @@ class DrawResources(object):
     
     def finalize(self):
         if self._geomTriangles is not None:
-            self.geom.addPrimitive(self._geomTriangles)
+            g=self._getGeom()
+            g.addPrimitive(self._geomTriangles)
         if self._geomTristrips is not None:
-            self.geom.addPrimitive(self._geomTristrips)
+            g=self._getGeom()
+            g.addPrimitive(self._geomTristrips)
         
 class _DrawNodeSpec(object):
     """
@@ -275,7 +336,7 @@ class GeomRequirementsCollection(object):
         self.drawNodeSpecs=None
         return len(self.entries)-1
 
-    def getDrawResourcesFactory(self):
+    def getDrawResourcesFactory(self,tile):
         if len(self.entries) == 0: return None
         if self.drawNodeSpecs is None:
             
@@ -288,7 +349,7 @@ class GeomRequirementsCollection(object):
             self.entryTodrawNodeSpec=range(1,len(self.entries)+1)
             
             
-        return DrawResourcesFactory(self.entries,self.entryTodrawNodeSpec,self.drawNodeSpecs)
+        return DrawResourcesFactory(self.entries,self.entryTodrawNodeSpec,self.drawNodeSpecs,tile)
 
 
 class DrawResourcesFactory(object):
@@ -298,13 +359,14 @@ class DrawResourcesFactory(object):
     provides DrawResources objects corresponding to a GeomRequirements
     indexed by return value from GeomRequirementsCollection.add
     """
-    def __init__(self,requirements,entryTodrawNodeSpec,drawNodeSpecs):
+    def __init__(self,requirements,entryTodrawNodeSpec,drawNodeSpecs,tile):
         self.requirements=requirements
         self.entryTodrawNodeSpec=entryTodrawNodeSpec
         self.drawNodeSpecs=drawNodeSpecs
         self.nodePaths=[None]*len(self.drawNodeSpecs)
         self.resources=[None]*len(self.requirements)
         self.np=None
+        self.tile=tile
 
     def getNodePath(self):
         """
@@ -345,8 +407,12 @@ class DrawResourcesFactory(object):
         if r is not None: return r
         
         nodeIndex=self.entryTodrawNodeSpec[index]
-        node=self._getNodePath(nodeIndex).getNode(0)
-        r=DrawResources(node,self.requirements[index])
+        nodePath=self._getNodePath(nodeIndex)
+        r=DrawResources(nodePath,self.requirements[index])
         self.resources[index]=r
         
         return r
+    
+    def getTile(self):
+        return self.tile
+        

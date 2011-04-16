@@ -10,10 +10,9 @@ class BakeryManager(object):
         All entries in midCache are also in tileCache
         Any entry that is None in midCache is None in tileCache
     """
-    def __init__(self,parentNodePath,bakery,tileSize,minRenderSize,maxRenderSize,maxPreGenSize,startX,startY):
+    def __init__(self,bakery,tileSize,minRenderSize,maxRenderSize,maxPreGenSize,startX,startY):
         assert minRenderSize<=maxRenderSize<=maxPreGenSize
         
-        self.parentNodePath=parentNodePath
         self.tileSize=tileSize
         
         self.bakery=bakery
@@ -138,6 +137,36 @@ class BakeryManager(object):
             t=self.tileCache.get(x,y)
             if t is None:
                 self._storeTile(x,y,tile)
+    
+    def render(self,tile):
+        """
+        tile for spec is done and should be displayed
+        
+        override as needed
+        """
+        pass
+        
+    def unrender(self,tile):
+        """
+        tile is outside rendering area, and should be hidded
+        
+        override as needed
+        """
+        pass
+        
+    def destroy(self,tile):
+        """
+        tile has been unrendered, or never was rendered, but is no longer managed by this manager
+        and will not be needed again. If needed again, will be regenerated, so dispose of this tile
+        
+        override as needed
+        """
+        pass
+
+class NodePathBakeryManager(BakeryManager):
+    def __init__(self,parentNodePath,*args,**kargs):
+        self.parentNodePath=parentNodePath
+        BakeryManager.__init__(self,*args,**kargs)
     
     def render(self,tile):
         """

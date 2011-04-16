@@ -29,6 +29,11 @@ from terrain.renderer.geoClipMapper import GeoClipMapper
 from terrain.bakery.bakery import loadTex
 import water
 
+import terrain.meshManager.meshManager
+import terrain.meshManager.treeFactory
+import terrain.meshManager.fernFactory
+import terrain.meshManager.groundFactory
+
 
 print PandaSystem.getVersionString()
 backBinName="background"
@@ -42,7 +47,7 @@ if rendererClass==RenderAutoTiler2:
     selectedBakery = terrain.bakery.gpuBakery.GpuBakery ; rendererFolder=sampleDir+'renderTiler'
     useLowLOD=False
     useMidLOD=False
-enableMeshes=True
+enableMeshes=False
 mouseControl=False
 enableWater=True
 ############## Configure! ##############
@@ -76,7 +81,13 @@ else:
     # Create a bakery that uses the "bakeryTiler" folder for its resources
     b = selectedBakery(None,sampleDir+"bakeryTiler")
     #Make the main (highest LOD) tiler
-    n=rendererClass(rendererFolder,b,tileSize,focus,2,3,heightScale=300)
+    barkTexture=None
+    leafTexture=None
+    tf=terrain.meshManager.treeFactory.TreeFactory(barkTexture=barkTexture,leafTexture=leafTexture)
+    ff=terrain.meshManager.fernFactory.FernFactory()
+    gf=terrain.meshManager.groundFactory.GroundFactory()
+    factories=[gf,ff,tf]
+    n=rendererClass(rendererFolder,b,tileSize,focus,factories,2,3,heightScale=300)
     if enableWater: waterNode = water.WaterNode( -100, -100, 200, 200, 0.1*n.heightScale)
     
     
