@@ -73,9 +73,9 @@ class RenderNode(NodePath):
                 if source=='file':
                     
                     setTexModes(s[3:])
-                    
-                    self.terrainNode.setTexture(texStage,loadTex(path+"/textures/"+name))
-                    self.terrainNode.setShaderInput('tex2D_'+name,loadTex(path+"/textures/"+name))
+                    tex=loadTex(path+"/textures/"+name)
+                    self.terrainNode.setTexture(texStage,tex)
+                    self.terrainNode.setShaderInput('tex2D_'+name,tex)
                     self.texList.append((texStage,float(s[2])))
                     
                 elif source=='map':
