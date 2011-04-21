@@ -43,6 +43,7 @@ class TreeFactory(gridFactory.GridFactory):
         if exists<.9: return
         
         quat=Quat()
+        quat.setHpr((random.random()*360,0,0))
         
         heightOffset=-0.4 # make sure whole bottom of tree is in ground
         pos=Vec3(x,y,tile.height(x,y)+heightOffset)
