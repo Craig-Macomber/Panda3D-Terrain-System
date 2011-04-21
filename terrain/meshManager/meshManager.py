@@ -394,7 +394,9 @@ class DrawResourcesFactory(object):
         self.nodePaths[nodeIndex]=np
         
         # setup render atributes on np here:
-        if s.texture is not None: np.setTexture(s.texture)
+        if s.texture is not None:
+            np.setTexture(s.texture)
+            np.setShaderInput("diffTex",s.texture)
         
         return np
         
