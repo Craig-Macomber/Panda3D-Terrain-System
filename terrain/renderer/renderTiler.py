@@ -239,7 +239,39 @@ class RenderTile(NodePath):
         
     def update(self,focus):
         self.meshes.update(focus)
+    
+    def sampleMap(self,mapName,x,y):
+        map=self.bakedTile.renderMaps[mapName]
+    
+        peeker=map.tex.peek()
+        tx=(x-self.bakedTile.x)/self.tileScale
+        ty=(y-self.bakedTile.y)/self.tileScale
         
+        sx=peeker.getXSize()
+        sy=peeker.getYSize()
+        px=(sx*tx)
+        py=(sy*ty)
+        
+        
+        #u=math.floor(px)/sx
+        #v=math.floor(py)/sy
+        fu=px-math.floor(px)
+        fv=py-math.floor(py)
+        #u2=math.floor(px+1)/sx
+        #v2=math.floor(py)/sy
+        px=math.floor(px)
+        py=math.floor(py)
+        
+        #peeker.lookup(c,u,v)
+        def getH(x,y):
+            c=Vec4()
+            peeker.lookup(c,x/sx,y/sy)
+            return c
+        h=(getH(px+1,py+1)*fu+getH(px,py+1)*(1-fu))*fv+(getH(px+1,py)*fu+getH(px,py)*(1-fu))*(1-fv)
+        
+        #peeker.filterRect(c,px/sx,py/sy,px/sx,py/sy)
+        return h
+    
     def height(self,x,y):
         t=self
         xDif=x-self.bakedTile.x
