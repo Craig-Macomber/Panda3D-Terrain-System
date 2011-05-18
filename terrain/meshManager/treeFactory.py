@@ -106,7 +106,7 @@ class TreeFactory(gridFactory.GridFactory):
                 
         stack = [base]
         
-        numVertices=3
+        numVertices=6
         
         #cache some info needed for placeing the vertexes
         angleData=[]

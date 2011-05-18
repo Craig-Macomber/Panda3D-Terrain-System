@@ -391,7 +391,8 @@ class World(keyTracker):
             self.meshManager.setScale(1.0)
         
 
-        
+        n.setShaderAuto()
+            
     def move(self, task):
 
         # Get the time elapsed since last frame. We need this
