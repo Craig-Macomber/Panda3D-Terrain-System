@@ -67,6 +67,6 @@ class GroundFactory(meshManager.MeshFactory):
         # Generate it.
         terrain.generate()
         
-        resources.arrachNode(root)
+        resources.attachNode(root)
         
         tile.terrain=terrain

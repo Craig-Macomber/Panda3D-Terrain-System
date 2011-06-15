@@ -282,7 +282,7 @@ class DrawResources(object):
             self.writers[name] = GeomVertexWriter(self.vdata, name)
         return self.writers[name]
     
-    def arrachNode(self,nodePath):
+    def attachNode(self,nodePath):
         nodePath.reparentTo(self.nodePath)
     
     def getGeomTriangles(self):
