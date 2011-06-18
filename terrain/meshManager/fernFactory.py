@@ -5,33 +5,38 @@ from panda3d.core import Vec3, Quat, GeomVertexFormat
 import meshManager
 import gridFactory
 
+noFerns=1
 
 class FernFactory(gridFactory.GridFactory):
     def __init__(self,leafTexture=None):
         self.leafTexture=leafTexture
         gridFactory.GridFactory.__init__(self,.25,30.0)
         
+        self.leafDataIndex={}
+        
     def regesterGeomRequirements(self,LOD,collection):
-        if self.leafTexture:
-            leafRequirements=meshManager.GeomRequirements(
-                geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-                texture=leafTexture
-                )
-        else:
-            leafRequirements=meshManager.GeomRequirements(
-                geomVertexFormat=GeomVertexFormat.getV3n3c4(),
-                )
+        if LOD>noFerns:
+            if self.leafTexture:
+                leafRequirements=meshManager.GeomRequirements(
+                    geomVertexFormat=GeomVertexFormat.getV3n3t2(),
+                    texture=leafTexture
+                    )
+            else:
+                leafRequirements=meshManager.GeomRequirements(
+                    geomVertexFormat=GeomVertexFormat.getV3n3c4(),
+                    )
+            
+            
+            self.leafDataIndex[LOD]=collection.add(leafRequirements)
         
-        
-        self.leafDataIndex=collection.add(leafRequirements)
-    
-    def drawItem(self,LOD,x,y,drawResourcesFactory,tile):
-        random.seed((x,y))
+    def drawItem(self,LOD,x,y,drawResourcesFactory,tile,tileCenter,seed=True):
+        if LOD<=noFerns: return
+        if seed: random.seed((x,y))
         exists=random.random()
         if exists<.6: return
         quat=Quat()
         
-        pos=Vec3(x,y,tile.height(x,y))
+        pos=Vec3(x,y,tile.height(x,y))-tileCenter
         self.drawFern(LOD,pos, quat,drawResourcesFactory)    
     
     def drawFern(self,LOD,pos,quat,drawResourcesFactory):
@@ -40,7 +45,13 @@ class FernFactory(gridFactory.GridFactory):
         
         if scale<.3: return
         
-        leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex)
+        count=int((scalar**.7)*12)
+        
+        if LOD<3:
+            if scale<.8: return
+            if count*scale<8: return
+        
+        leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex[LOD])
         leafTri=leafResources.getGeomTriangles()
         vertexWriter=leafResources.getWriter("vertex")
         normalWriter=leafResources.getWriter("normal")
@@ -50,7 +61,7 @@ class FernFactory(gridFactory.GridFactory):
         else:
             colorWriter = leafResources.getWriter("color")
         
-        count=int((scalar**.7)*12)
+        
         
         scale*=self.scalar*2
         

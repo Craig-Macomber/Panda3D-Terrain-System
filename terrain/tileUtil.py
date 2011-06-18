@@ -11,6 +11,13 @@ class BakeryManager(object):
         Any entry that is None in midCache is None in tileCache
     """
     def __init__(self,bakery,tileSize,minRenderSize,maxRenderSize,maxPreGenSize,startX,startY):
+        """
+        
+        bakery should be a bakery.bakery.FixedBakery
+        
+        
+        """
+        
         assert minRenderSize<=maxRenderSize<=maxPreGenSize
         
         self.tileSize=tileSize
@@ -84,15 +91,12 @@ class BakeryManager(object):
         return None
         
     def _makeTile(self,x,y,async=False):
-        tileSize=self.tileSize
-        xStart=x*tileSize
-        yStart=y*tileSize
         if async:
             self.asyncBaking=True
-            self.bakery.asyncGetTile(xStart, yStart, tileSize, self._asyncTileDone, (x,y))
+            self.bakery.asyncGetTile(x, y, self._asyncTileDone, (x,y))
         else:
             self.asyncBaking=False
-            return self.bakery.getTile(xStart, yStart, tileSize)
+            return self.bakery.getTile(x, y)
     
     def updateCenter(self,worldX,worldY):
         """

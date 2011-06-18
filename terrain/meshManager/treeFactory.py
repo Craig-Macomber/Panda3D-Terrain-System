@@ -5,40 +5,45 @@ from panda3d.core import Vec3, Quat, GeomVertexFormat
 import meshManager
 import gridFactory
 
+noTrees=-1
 
 class TreeFactory(gridFactory.GridFactory):
     def __init__(self,barkTexture=None,leafTexture=None):
         self.barkTexture=barkTexture
         self.leafTexture=leafTexture
         gridFactory.GridFactory.__init__(self,2.0,5.0)
-    
+        
+        self.leafDataIndex={}
+        self.trunkDataIndex={}
     def regesterGeomRequirements(self,LOD,collection):
-        if self.barkTexture is not None:
-            trunkRequirements=meshManager.GeomRequirements(
-                geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-                texture=self.barkTexture
-                )
-        else:
-            trunkRequirements=meshManager.GeomRequirements(
-                geomVertexFormat=GeomVertexFormat.getV3n3c4(),
-                )
-        
-        if self.leafTexture is not None:
-            leafRequirements=meshManager.GeomRequirements(
-                geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-                texture=self.leafTexture
-                )
-        
-        else:
-            leafRequirements=meshManager.GeomRequirements(
-                geomVertexFormat=GeomVertexFormat.getV3n3c4(),
-                )
-        
-        self.trunkDataIndex=collection.add(trunkRequirements)
-        self.leafDataIndex=collection.add(leafRequirements)
+       if LOD>noTrees:
+            if self.barkTexture is not None:
+                trunkRequirements=meshManager.GeomRequirements(
+                    geomVertexFormat=GeomVertexFormat.getV3n3t2(),
+                    texture=self.barkTexture
+                    )
+            else:
+                trunkRequirements=meshManager.GeomRequirements(
+                    geomVertexFormat=GeomVertexFormat.getV3n3c4(),
+                    )
+            
+            if self.leafTexture is not None:
+                leafRequirements=meshManager.GeomRequirements(
+                    geomVertexFormat=GeomVertexFormat.getV3n3t2(),
+                    texture=self.leafTexture
+                    )
+            
+            else:
+                leafRequirements=meshManager.GeomRequirements(
+                    geomVertexFormat=GeomVertexFormat.getV3n3c4(),
+                    )
+            
+            self.trunkDataIndex[LOD]=collection.add(trunkRequirements)
+            self.leafDataIndex[LOD]=collection.add(leafRequirements)
     
-    def drawItem(self,LOD,x,y,drawResourcesFactory,tile):
-        random.seed((x,y))
+    def drawItem(self,LOD,x,y,drawResourcesFactory,tile,tileCenter,seed=True):
+        if LOD<=noTrees: return
+        if seed: random.seed((x,y))
         exists=random.random()
         if exists<.9: return
         
@@ -46,22 +51,52 @@ class TreeFactory(gridFactory.GridFactory):
         quat.setHpr((random.random()*360,0,0))
         
         heightOffset=-0.4 # make sure whole bottom of tree is in ground
-        pos=Vec3(x,y,tile.height(x,y)+heightOffset)
+        pos=Vec3(x,y,tile.height(x,y)+heightOffset)-tileCenter
         
         self.drawTree(LOD,(pos, quat, 0, 0, 0),drawResourcesFactory)
                
     def drawTree(self,LOD,base,drawResourcesFactory):
-        
         age=random.random()**1.5
         to = 12*age
         
         if to<6: return
+        xLOD=max(LOD,to/6*LOD)
+        
+        skipLeaves=0;
+        
+        if xLOD<.6:
+            numVertices=2
+            cutoffRadius=.9
+            skipLeaves=.6
+        elif xLOD<1:
+            numVertices=2
+            cutoffRadius=.7
+            skipLeaves=.5
+        elif xLOD<2:
+            numVertices=3
+            cutoffRadius=.5
+            skipLeaves=.4
+        elif xLOD<3:
+            numVertices=3
+            cutoffRadius=.2
+        elif xLOD<4:
+            numVertices=5
+            cutoffRadius=-1
+        else:
+            numVertices=6
+            cutoffRadius=-1
+        
+        doLeaves=True
+        
+        
+        
+        
         
         dotCount=1#int((2/age))
         
-        leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex)
+        leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex[LOD])
         leafTri=leafResources.getGeomTriangles()
-        trunkResources=drawResourcesFactory.getDrawResources(self.trunkDataIndex)
+        trunkResources=drawResourcesFactory.getDrawResources(self.trunkDataIndex[LOD])
         lines = trunkResources.getGeomTristrips()
         vertWriter = trunkResources.getWriter("vertex")
         normalWriter = trunkResources.getWriter("normal")
@@ -106,7 +141,7 @@ class TreeFactory(gridFactory.GridFactory):
                 
         stack = [base]
         
-        numVertices=6
+        
         
         #cache some info needed for placeing the vertexes
         angleData=[]
@@ -127,36 +162,41 @@ class TreeFactory(gridFactory.GridFactory):
             radius=radiusList[depth]
             
             startRow = vertWriter.getWriteRow()
-            
-            sCoord += length/4.0
-            
-            #this draws the body of the tree. This draws a ring of vertices and connects the rings with 
-            #triangles to form the body. 
-
-            currAngle = 0 
             perp1 = quat.getRight() 
-            perp2 = quat.getForward()   
-            #vertex information is written here 
-            for cos,sin,tex in angleData:
-                adjCircle = pos + (perp1 * cos + perp2 * sin) * radius * self.scalar
-                normal = perp1 * cos + perp2 * sin        
-                normalWriter.addData3f(normal) 
-                vertWriter.addData3f(adjCircle) 
-                if self.barkTexture is not None:
-                    texWriter.addData2f(tex,sCoord) 
+            perp2 = quat.getForward() 
+            
+            if radius>cutoffRadius:
+            
+                
+                
+                sCoord += length/4.0
+                
+                #this draws the body of the tree. This draws a ring of vertices and connects the rings with 
+                #triangles to form the body. 
+    
+                currAngle = 0 
+                  
+                #vertex information is written here 
+                for cos,sin,tex in angleData:
+                    adjCircle = pos + (perp1 * cos + perp2 * sin) * radius * self.scalar
+                    normal = perp1 * cos + perp2 * sin        
+                    normalWriter.addData3f(normal) 
+                    vertWriter.addData3f(adjCircle) 
+                    if self.barkTexture is not None:
+                        texWriter.addData2f(tex,sCoord) 
+                    else:
+                        colorWriter.addData4f(.4,.3,.3,1)
+                #we cant draw quads directly so we use Tristrips 
+                
+                if bottom: 
+                    bottom=False
                 else:
-                    colorWriter.addData4f(.4,.3,.3,1)
-            #we cant draw quads directly so we use Tristrips 
-            
-            if bottom: 
-                bottom=False
-            else:
-                         
-                for i in xrange(vNum): 
-                    lines.addVertices(i + previousRow,i + startRow)
-                if not self.barkTexture: lines.addVertices(previousRow,startRow)
-                lines.closePrimitive()
-            
+                             
+                    for i in xrange(vNum): 
+                        lines.addVertices(i + previousRow,i + startRow)
+                    if not self.barkTexture: lines.addVertices(previousRow,startRow)
+                    lines.closePrimitive()
+                
             if depth + 1 < len(lengthList):
                 #move foward along the right axis 
                 newPos = pos + quat.getUp() * length * self.scalar
@@ -174,7 +214,7 @@ class TreeFactory(gridFactory.GridFactory):
                 else: 
                     #just make another branch connected to this one with a small variation in direction 
                     stack.append((newPos, _randomBend(quat, 20), depth + 1, startRow, sCoord))
-            else:
+            elif doLeaves and (skipLeaves==0 or (random.random()>=skipLeaves)):
                 q=Quat()
                 q.setHpr((random.random()*2*math.pi,0,0))
                 quat=quat*q

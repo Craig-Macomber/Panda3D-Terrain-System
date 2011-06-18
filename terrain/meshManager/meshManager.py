@@ -1,4 +1,4 @@
-from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat, GeomTriangles, GeomTristrips
+from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat, GeomTriangles, GeomTristrips, LODNode, Vec3
 import math
 
 from terrain import tileUtil
@@ -24,72 +24,6 @@ However, even in pure python, reasonable performance can be achieved with this s
 """
 
 
-# class LODLevel(tileUtil.ToroidalCache):
-#     def __init__(self,meshManager,LOD,blockSize,blockCount):
-#         self.meshManager=meshManager
-#         self.blockSize=blockSize
-#         self.LOD=LOD
-#         #self.blockCount=blockCount
-#         
-#         
-#         self.geomRequirementsCollection=None
-#         
-#         
-#         tileUtil.ToroidalCache.__init__(self,blockCount)
-#     
-#     def addBlock(self,x,y,x2,y2):
-#         if self.geomRequirementsCollection is None:
-#             self.geomRequirementsCollection=GeomRequirementsCollection()
-#             for c in self.meshManager.factories:
-#                 c.regesterGeomRequirements(self.LOD,self.geomRequirementsCollection)
-#         
-#         drawResourcesFactory=self.geomRequirementsCollection.getDrawResourcesFactory(None)
-#         if drawResourcesFactory is None: return None
-#         
-#         for c in self.meshManager.factories:
-#             c.draw(self.LOD,x,y,x2,y2,drawResourcesFactory)
-#         
-#         
-#         nodePath=drawResourcesFactory.getNodePath()
-#         
-#         if nodePath is None: return
-#         
-#         block=_MeshBlock(self.LOD,x,y,x2,y2)
-#         nodePath.reparentTo(self.meshManager)
-#         nodePath.setPythonTag("_MeshBlock",block)
-#         return nodePath
-# 
-#     
-#     def replaceValue(self,x,y,old):
-#         if old is not None:
-#             old.removeNode()
-#             #old.setPythonTag("_MeshBlock",None)
-#         s=self.blockSize
-#         return self.addBlock(x*s,y*s,(x+1)*s,(y+1)*s)
-#     def update(self,pos):
-#         p=pos*(1.0/self.blockSize)
-#         self.updateCenter(p.getX(),p.getY())
-
-
-class LODTransition(object):
-    """
-    specifies when and how to transition blocks between 2 LODs (in both directions)
-    """
-    def __init__(self,mergeThreshold,splitThreshold,splitCount):
-        """
-        if all blocks under a parent are below the merge threshold, merge them
-        
-        if 
-        """
-        self.mergeThreshold=mergeThreshold
-        self.splitThreshold=splitThreshold
-    def needsHigher(self,LOD):
-        """
-        if the passed LOD value means one should transition
-        from the low LOD side of this transition to the hight LOD side, returns true
-        """
-        return LOD>splitThreshold
-        
 
 class _MinLODBlockCache(tileUtil.ToroidalCache):
     """
@@ -125,9 +59,7 @@ class _MinLODBlockCache(tileUtil.ToroidalCache):
         
         if nodePath is None: return
         
-        block=_MeshBlock(self.LOD,x,y,x2,y2)
         nodePath.reparentTo(self.meshManager)
-        nodePath.setPythonTag("_MeshBlock",block)
         return nodePath
 
     
@@ -143,29 +75,29 @@ class _MinLODBlockCache(tileUtil.ToroidalCache):
 
 
 class LODLevel(object):
-    def __init__(self,higher,lower,factories):
+    def __init__(self,index,maxDst,minDst,factories):
         self.factories=factories
         self.geomRequirementsCollection=GeomRequirementsCollection()
-        self.higher=higher # LODTransition
-        self.lower=lower # LODTransition
+        self.index=index
+        self.maxDst=maxDst
+        self.minDst=minDst
         self.factories=factories
         for c in factories:
-            c.regesterGeomRequirements(self,self.geomRequirementsCollection)
+            c.regesterGeomRequirements(index,self.geomRequirementsCollection)
     
-    def makeTile(self,x,y,x2,y2,tile):
+    def makeTile(self,x,y,x2,y2,tile,tileCenter):
         drawResourcesFactory=self.geomRequirementsCollection.getDrawResourcesFactory(tile)
-        if drawResourcesFactory is None: return None
+        if drawResourcesFactory is None:
+            return None
         
         for c in self.factories:
-            c.draw(self,x,y,x2,y2,drawResourcesFactory)
+            c.draw(self.index,x,y,x2,y2,drawResourcesFactory,tileCenter)
         
         
         nodePath=drawResourcesFactory.getNodePath()
         
-        if nodePath is None: return
-        
-        block=_MeshBlock(self,x,y,x2,y2)
-        nodePath.setPythonTag("_MeshBlock",block)
+        #if nodePath is None: return
+
         return nodePath
 
         
@@ -176,47 +108,40 @@ class MeshManager(NodePath):
     
     meshes come from passed in factories
     """
-    def __init__(self,factories,LODTransitions=[]):
+    def __init__(self,factories,LODCutoffs=(float('inf'),)):
+        """
+        LODCutoffs == list of max view distances for the LOD levels
+        Low LODs (high distances) should be first. Bottom cutoff of 0 should not be included.
+        
+        """
         self.factories=factories
-        self.LODTransitions=LODTransitions
+        self.LODCutoffs=list(LODCutoffs)
+        self.LODCutoffs.append(0)
         self.LODLevels=[]
-        ntrans=[None]+LODTransitions+[None]
-        for i in xrange(len(ntrans)-1):
-            self.LODLevels.append(LODLevel(ntrans[i],ntrans[i+1],factories))
-        
-    def getLODLevel(self,LOD,oldLODLevel=None):
-        """
-        if oldLODLevel is not None, this will return None if the LOD should not be transitioned,
-        
-        otherwise, returns the lowest valid LODLevel
-        """
-        levelIndex=0
-        while True:
-            level=self.LODLevels[levelIndex]
-            if level.higher is None:
-                return level # reached the max LOD, cant go higher
-            else:
-                if level.higher.needsHigher(LOD):
-                    levelIndex+=1
-                else:
-                    return level
-        
+        last=LODCutoffs[0]#float('inf')
+        for i in xrange(len(self.LODCutoffs)-1):
+            self.LODLevels.append(LODLevel(i,self.LODCutoffs[i],self.LODCutoffs[i+1],factories))
+            print i,self.LODCutoffs[i],self.LODCutoffs[i+1]
     
-class _MeshBlock(object):
-    """
-    for storing info about mesh block node paths.
-    """
-    def __init__(self,LOD,x,y,x2,y2):
-        self.LOD=LOD
-        self.x=x
-        self.y=y
-        self.x2=x2
-        self.y2=y2
-        self.center=NodePath("Center")
-        self.center.setPos((x+x2)/2.0,(y+y2)/2.0,0)
-        self.maxR=math.sqrt((x-x2)**2+(y-y2)**2)/2
-    
-
+    def makeTile(self,x,y,x2,y2,tile,minLODindex=0,maxLODindex=None):
+        if maxLODindex is None: maxLODindex=len(self.LODLevels)-1
+        tileCenter=Vec3(x+x2,y+y2,0)/2
+        if minLODindex==maxLODindex:
+            n=self.LODLevels[maxLODindex].makeTile(x,y,x2,y2,tile,tileCenter)
+            n.setPos(tileCenter)
+            return n
+        lodNode=LODNode('tile_lod')
+        lodNodePath=NodePath(lodNode)
+        
+        lodNodePath.setPos(tileCenter)
+        for i in xrange(minLODindex,maxLODindex+1):
+            n=self.LODLevels[i].makeTile(x,y,x2,y2,tile,tileCenter)
+            if n is not None:
+                n.reparentTo(lodNodePath)
+                lodNode.addSwitch(self.LODCutoffs[i],self.LODCutoffs[i+1])
+                
+        return lodNodePath
+        
 class MeshFactory(object):
     def regesterGeomRequirements(self,LOD,collection):
         """
@@ -231,7 +156,7 @@ class MeshFactory(object):
         # perhaps this should also have some approximate cost stats for efficent graceful degradation
         return [] # list of values at which rendering changes somewhat
     
-    def draw(self,LOD,x,y,x1,y1,drawResourcesFactory):
+    def draw(self,LOD,x,y,x1,y1,drawResourcesFactory,tileCenter):
         pass # gets called with all entries in getGeomRequirements(LOD)
     
     

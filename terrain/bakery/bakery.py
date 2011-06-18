@@ -20,8 +20,52 @@ class Bakery:
         #callback(self.getTile(xStart, yStart, tileSize),*callbackParams)
     
 
-
-
+class FixedBakery:
+    """
+    bakery that produces integer indexed fixed sized tiles
+    """
+    def hasTile(self, x, y):
+        """If one is using a cashed tile source instead of a live bakery, this would be sometimes be false"""
+        raise NotImplementedError()
+        
+    def getTile(self, x, y):
+        """
+        returns a tile for the specified positions and size
+        """
+        raise NotImplementedError()
+    
+    def asyncGetTile(self, x, y, callback, callbackParams=()):
+        """
+        like getTile, but calls callback(tile,*callbackParams) when done
+        """
+        raise NotImplementedError()
+        #callback(self.getTile(x, y),*callbackParams)
+        
+        
+class FixWrapped(FixedBakery):
+    """
+    a wrapper to use a Bakery as a FixedBakery
+    """
+    def __init__(self,bakery,tileSize,orginX=0,orginY=0):
+        self.bakery=bakery
+        self.tileSize=tileSize
+        self.orginX=orginX
+        self.orginY=orginY
+    
+    def _toBakery(self,x,y):
+        return x*self.tileSize+self.orginX, y*self.tileSize+self.orginY, self.tileSize
+    
+    def hasTile(self, x, y):
+        return self.bakery.hasTile(*self._toBakery(x,y))
+        
+    def getTile(self, x, y):
+        return self.bakery.getTile(*self._toBakery(x,y))
+    
+    def asyncGetTile(self, x, y, callback, callbackParams=()):
+        xStart, yStart, tileSize=self._toBakery(x,y)
+        self.bakery.asyncGetTile(xStart, yStart, tileSize,callback,callbackParams)
+        
+    
 class Tile:
     """
     Baked Tile

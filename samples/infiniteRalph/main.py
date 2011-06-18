@@ -24,7 +24,7 @@ sampleDir="samples/infiniteRalph/"
 import terrain
 import terrain.bakery.animate_dreams_bakery
 import terrain.bakery.gpuBakery
-from terrain.renderer.renderTiler import RenderAutoTiler2
+from terrain.renderer.renderTiler import RenderTileBakery,RenderNodeTiler
 from terrain.renderer.geoClipMapper import GeoClipMapper
 from terrain.bakery.bakery import loadTex
 import water
@@ -41,8 +41,8 @@ backBinName="background"
 
 ############## Configure! ##############
 #rendererClass=GeoClipMapper
-rendererClass=RenderAutoTiler2
-if rendererClass==RenderAutoTiler2:
+rendererClass=RenderTileBakery
+if rendererClass==RenderTileBakery:
     #selectedBakery = terrain.bakery.animate_dreams_bakery.ADBakery ; rendererFolder=sampleDir+'renderTilerSimple'
     selectedBakery = terrain.bakery.gpuBakery.GpuBakery ; rendererFolder=sampleDir+'renderTiler'
     useLowLOD=False
@@ -85,10 +85,20 @@ else:
     leafTexture=None
     tf=terrain.meshManager.treeFactory.TreeFactory(barkTexture=barkTexture,leafTexture=leafTexture)
     ff=terrain.meshManager.fernFactory.FernFactory()
-    gf=terrain.meshManager.groundFactory.GroundFactory()
+    heightScale=300
+    gf=terrain.meshManager.groundFactory.GroundFactory(rendererFolder,heightScale=heightScale)
+    
     factories=[gf,ff,tf]
-    n=rendererClass(rendererFolder,b,tileSize,focus,factories,2,3,heightScale=300)
-    if enableWater: waterNode = water.WaterNode( -100, -100, 200, 200, 0.1*n.heightScale)
+    
+    LODCutoffs=[float('inf'),2000,1000,500,300]
+
+    meshManager=terrain.meshManager.meshManager.MeshManager(factories,LODCutoffs)
+    rtb=RenderTileBakery(b,tileSize,meshManager)
+    
+    n=RenderNodeTiler(rtb,tileSize,focus,forceRenderedCount=2,maxRenderedCount=3)
+    
+    #n=rendererClass(rendererFolder,b,tileSize,focus,factories,2,3,heightScale=300)
+    if enableWater: waterNode = water.WaterNode( -100, -100, 200, 200, 0.1*heightScale)
     
     
     if useLowLOD or useMidLOD:

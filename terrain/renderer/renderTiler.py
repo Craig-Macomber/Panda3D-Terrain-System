@@ -9,11 +9,13 @@ from direct.task.Task import Task
 
 from terrain import tileUtil
 
+from terrain.bakery.bakery import FixedBakery,FixWrapped
+
 class RenderTiler(RenderNode):
-    def __init__(self,path,heightScale,meshFactories):
+    def __init__(self,path,heightScale,meshFactories,LODCutoffs):
         RenderNode.__init__(self,path,NodePath(path+"_terrainNode"),heightScale)
         
-        self.meshManager=meshManager.MeshManager(meshFactories)
+        self.meshManager=meshManager.MeshManager(meshFactories,LODCutoffs)
     
     def addTile(self, bakedTile):
         n=RenderTile(bakedTile,self)
@@ -148,23 +150,53 @@ class RenderTiler(RenderNode):
 #         return 0
 # 
 
+class RenderNodeTiler(NodePath):
+    def __init__(self,renderTileSource,tileSize,focus,forceRenderedCount=2,maxRenderedCount=4):
+        NodePath.__init__(self,"RenderNodeTiler")        
+        self.tileSize=tileSize
+        self.forceRenderedCount=forceRenderedCount
+        self.maxRenderedCount=maxRenderedCount
+        self.focus=focus
+        
+        self.renderTileBakery=renderTileSource
+        
+        cacheSize=maxRenderedCount
+        x,y=self.focuseLoc()
+        self.bakeryManager=tileUtil.NodePathBakeryManager(self,
+            self.renderTileBakery,tileSize,
+            forceRenderedCount,maxRenderedCount,cacheSize,
+            x,y)
+        
+        # Add a task to keep updating the terrain
+        taskMgr.add(self.updateTiles, "updateTiles")
+    def focuseLoc(self):
+        p=self.focus.getPos(self)
+        return p.getX(),p.getY()
+    
+    def updateTiles(self,task):
+        self.bakeryManager.updateCenter(*self.focuseLoc())
+        return Task.cont 
+            
+    def height(self,x,y):
+        return self.bakeryManager.getTile(x,y).height(x,y)
+
 
 class RenderAutoTiler2(RenderTiler):
-    def __init__(self,path,tileSource,tileScale,focus,meshFactories,forceRenderedCount=2,maxRenderedCount=4,heightScale=100):
-        RenderTiler.__init__(self,path,heightScale,meshFactories)        
+    def __init__(self,path,tileSource,tileSize,focus,meshFactories,LODCutoffs,forceRenderedCount=2,maxRenderedCount=4,heightScale=100):
+        RenderTiler.__init__(self,path,heightScale,meshFactories,LODCutoffs)        
         self.tileSource=tileSource
-        self.tileScale=tileScale
+        self.tileSize=tileSize
         self.tilesMade=0
         self.forceRenderedCount=forceRenderedCount
         self.maxRenderedCount=maxRenderedCount
         self.focus=focus
         
-        self.renderTileBakery=RenderTileBakery(tileSource,self)
+        self.renderTileBakery=RenderTileBakery(tileSource,tileSize,self.meshManager)
         
         cacheSize=maxRenderedCount
         x,y=self.focuseLoc()
         self.bakeryManager=tileUtil.NodePathBakeryManager(self.terrainNode,
-            self.renderTileBakery,tileScale,
+            self.renderTileBakery,tileSize,
             forceRenderedCount,maxRenderedCount,cacheSize,
             x,y)
         
@@ -183,26 +215,31 @@ class RenderAutoTiler2(RenderTiler):
         return self.bakeryManager.getTile(x,y).height(x,y)
 
 
-class RenderTileBakery(object):
+class RenderTileBakery(FixedBakery):
     """
     A class the wraps a bakery to produce RenderTiles instead of baked tiles
     """
-    def __init__(self,bakery,renderNode):
-        self.bakery=bakery
+    def __init__(self,bakery,tileSize,meshManager):
+        self.bakery=FixWrapped(bakery,tileSize)
         self.hasTile=bakery.hasTile
-        self.renderNode=renderNode
+        self.meshManager=meshManager
         
-    def getTile(self, xStart, yStart, tileSize):
-        return RenderTile(self.bakery.getTile(xStart, yStart, tileSize),self.renderNode)
+    def getTile(self, x, y):
+        return RenderTile(self.bakery.getTile(x, y),self.meshManager)
     
-    def asyncGetTile(self, xStart, yStart, tileSize, callback, callbackParams=()):
-        self.bakery.asyncGetTile(xStart, yStart, tileSize, self._asyncTileDone, (callback,callbackParams))
+    def asyncGetTile(self, x, y, callback, callbackParams=()):
+        self.bakery.asyncGetTile(x, y, self._asyncTileDone, (callback,callbackParams))
         
     def _asyncTileDone(self,tile,callback,callbackParams):
-        callback(RenderTile(tile,self.renderNode),*callbackParams)
+        callback(RenderTile(tile,self.meshManager),*callbackParams)
 
 class RenderTile(NodePath):
-    def __init__(self,bakedTile,node):
+    """
+    Currently this calss gets it's height(x,y) method added to it by a GroundFactory
+    
+    It could sample its height map instead, but it does not know the height scale.
+    """
+    def __init__(self,bakedTile,meshManager):
         """
         node = the renderNode this is for
         """
@@ -211,7 +248,6 @@ class RenderTile(NodePath):
         NodePath.__init__(self,"renderTile")
         self.setPythonTag("subclass", self)
         
-        self.renderNode=node
         
         
         self.tileScale=bakedTile.scale
@@ -221,20 +257,16 @@ class RenderTile(NodePath):
         
         renderMaps=bakedTile.renderMaps
         
-        
-              
-        
-        
-        
         # generate meshes on it
         x=bakedTile.x
         y=bakedTile.y
         x2=x+bakedTile.scale
         y2=y+bakedTile.scale
         
-        self.heightScale=node.heightScale
         
-        self.meshes=node.meshManager.getLODLevel(0).makeTile(x,y,x2,y2,self)
+        self.meshes=meshManager.makeTile(x,y,x2,y2,self)
+        if self.meshes is None:
+            self.meshes=NodePath("EmptyMeshes")
         self.meshes.reparentTo(self)
         
     def update(self,focus):
@@ -272,21 +304,3 @@ class RenderTile(NodePath):
         #peeker.filterRect(c,px/sx,py/sy,px/sx,py/sy)
         return h
     
-    def height(self,x,y):
-        t=self
-        xDif=x-self.bakedTile.x
-        if xDif>=0 and xDif<=self.tileScale:
-            yDif=y-self.bakedTile.y
-            if yDif>=0 and yDif<=self.tileScale:
-    
-                # found correct tile
-                h=t.terrain.heightfield()
-                mapSize=h.getXSize()
-                s=(mapSize-1)/self.tileScale
-                xLoc=min(mapSize,max(0,xDif*s))
-                yLoc=min(mapSize,max(0,yDif*s))
-                
-                return t.terrain.getElevation(xLoc,yLoc)*self.heightScale
-
-        #print "Find height Failed"
-        return 0.0
