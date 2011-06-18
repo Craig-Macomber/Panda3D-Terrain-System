@@ -47,7 +47,6 @@ if rendererClass==RenderTileBakery:
     selectedBakery = terrain.bakery.gpuBakery.GpuBakery ; rendererFolder=sampleDir+'renderTiler'
     useLowLOD=False
     useMidLOD=False
-enableMeshes=False
 mouseControl=False
 enableWater=True
 ############## Configure! ##############
@@ -381,25 +380,6 @@ class World(keyTracker):
         self.floater.setZ(6)
         self.floater.setY(-1)
         
-        
-        if enableMeshes:
-            import terrain.meshManager.meshManager
-            import terrain.meshManager.treeFactory
-            import terrain.meshManager.fernFactory
-            #scalar=1.0/terrainScale
-            class HeightTranslator(object):
-                def height(selfx,x,y):
-                    h=n.height(x,y)
-                    return h
-            ht=n#HeightTranslator()
-            leafTexture = loadTex(sampleDir+"textures/material-10-cl",False)
-            barkTexture = loadTex(sampleDir+"textures/barkTexture",False)
-            tf=terrain.meshManager.treeFactory.TreeFactory(ht,barkTexture=barkTexture,leafTexture=leafTexture)
-            factories=[tf,terrain.meshManager.fernFactory.FernFactory(ht)]
-            self.meshManager=terrain.meshManager.meshManager.MeshManager(factories)
-            self.meshManager.reparentTo(n)
-            self.meshManager.setScale(1.0)
-        
 
         n.setShaderAuto()
             
@@ -494,10 +474,7 @@ class World(keyTracker):
         
         base.camera.setPos(self.floater,0,0,0)
         base.camera.setPos(base.camera,0,-self.camDist,0)
-        
-        if enableMeshes:
-            self.meshManager.update(self.ralph)
-            
+
         return Task.cont
 
 

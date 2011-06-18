@@ -23,57 +23,6 @@ Panda3D's python wrapper.
 However, even in pure python, reasonable performance can be achieved with this system!
 """
 
-
-
-class _MinLODBlockCache(tileUtil.ToroidalCache):
-    """
-    Blocks gets subdivided into smaller (higher LOD) ones
-    so at some point, there has to be a lowest level, and this manages it.
-    """
-    def __init__(self,meshManager,LOD,blockSize,blockCount):
-        self.meshManager=meshManager
-        self.blockSize=blockSize
-        self.LOD=LOD
-        self.blockCount=blockCount
-        
-        
-        self.geomRequirementsCollection=None
-        
-        
-        tileUtil.ToroidalCache.__init__(self,blockCount,self.replaceValue,hysteresis=.6)
-    
-    def addBlock(self,x,y,x2,y2,tile):
-        if self.geomRequirementsCollection is None:
-            self.geomRequirementsCollection=GeomRequirementsCollection()
-            for c in self.meshManager.factories:
-                c.regesterGeomRequirements(self.LOD,self.geomRequirementsCollection)
-        
-        drawResourcesFactory=self.geomRequirementsCollection.getDrawResourcesFactory(tile)
-        if drawResourcesFactory is None: return None
-        
-        for c in self.meshManager.factories:
-            c.draw(self.LOD,x,y,x2,y2,drawResourcesFactory)
-        
-        
-        nodePath=drawResourcesFactory.getNodePath()
-        
-        if nodePath is None: return
-        
-        nodePath.reparentTo(self.meshManager)
-        return nodePath
-
-    
-    def replaceValue(self,x,y,old):
-        if old is not None:
-            old.removeNode()
-            #old.setPythonTag("_MeshBlock",None)
-        s=self.blockSize
-        return self.addBlock(x*s,y*s,(x+1)*s,(y+1)*s)
-    def update(self,pos):
-        p=pos*(1.0/self.blockSize)
-        self.updateCenter(p.getX(),p.getY())
-
-
 class LODLevel(object):
     def __init__(self,index,maxDst,minDst,factories):
         self.factories=factories

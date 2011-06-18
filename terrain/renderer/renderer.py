@@ -1,7 +1,6 @@
 from direct.showbase.ShowBase import ShowBase
 import direct.directbase.DirectStart
 from pandac.PandaModules import *
-#from panda3d.core import GeoMipTerrain, NodePath, TextureStage, Vec3, PNMImage
 
 from terrain.bakery.bakery import Tile, parseFile, loadTex
 import math
