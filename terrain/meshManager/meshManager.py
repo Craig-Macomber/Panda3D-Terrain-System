@@ -70,7 +70,6 @@ class MeshManager(NodePath):
         last=LODCutoffs[0]#float('inf')
         for i in xrange(len(self.LODCutoffs)-1):
             self.LODLevels.append(LODLevel(i,self.LODCutoffs[i],self.LODCutoffs[i+1],factories))
-            print i,self.LODCutoffs[i],self.LODCutoffs[i+1]
     
     def makeTile(self,x,y,x2,y2,tile,minLODindex=0,maxLODindex=None):
         if maxLODindex is None: maxLODindex=len(self.LODLevels)-1

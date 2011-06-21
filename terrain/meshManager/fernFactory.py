@@ -41,7 +41,7 @@ class FernFactory(gridFactory.GridFactory):
     
     def drawFern(self,LOD,pos,quat,drawResourcesFactory):
         scalar=random.random()
-        scale=scalar**.3
+        scale=scalar
         
         if scale<.3: return
         
@@ -49,7 +49,10 @@ class FernFactory(gridFactory.GridFactory):
         
         if LOD<3:
             if scale<.8: return
-            if count*scale<8: return
+            if count*scale<10: return
+        elif LOD<4:
+            if scale<.5: return
+            if count*scale<6: return
         
         leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex[LOD])
         leafTri=leafResources.getGeomTriangles()
@@ -63,7 +66,7 @@ class FernFactory(gridFactory.GridFactory):
         
         
         
-        scale*=self.scalar*2
+        scale*=self.scalar*3
         
         q2=Quat()
         q3=Quat()

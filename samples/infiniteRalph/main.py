@@ -24,6 +24,7 @@ sampleDir="samples/infiniteRalph/"
 import terrain
 import terrain.bakery.animate_dreams_bakery
 import terrain.bakery.gpuBakery
+from terrain.renderer.renderer import RenderNode
 from terrain.renderer.renderTiler import RenderTileBakery,RenderNodeTiler
 from terrain.renderer.geoClipMapper import GeoClipMapper
 from terrain.bakery.bakery import loadTex
@@ -45,8 +46,6 @@ rendererClass=RenderTileBakery
 if rendererClass==RenderTileBakery:
     #selectedBakery = terrain.bakery.animate_dreams_bakery.ADBakery ; rendererFolder=sampleDir+'renderTilerSimple'
     selectedBakery = terrain.bakery.gpuBakery.GpuBakery ; rendererFolder=sampleDir+'renderTiler'
-    useLowLOD=False
-    useMidLOD=False
 mouseControl=False
 enableWater=True
 ############## Configure! ##############
@@ -96,41 +95,12 @@ else:
     
     n=RenderNodeTiler(rtb,tileSize,focus,forceRenderedCount=2,maxRenderedCount=3)
     
+    #x=RenderNode(rendererFolder,n)
+    
     #n=rendererClass(rendererFolder,b,tileSize,focus,factories,2,3,heightScale=300)
     if enableWater: waterNode = water.WaterNode( -100, -100, 200, 200, 0.1*heightScale)
     
-    
-    if useLowLOD or useMidLOD:
-        # Setup a card maker for depth reset cards for between LOD draws
-        cm=CardMaker("depthwiper")
-        cm.setFrameFullscreenQuad()
-        
-        # Make node to hold depth reset cards
-        dist=maxDist*3.0
-        clearCardHolder=NodePath('clearCardHolder')
-        clearCardHolder.reparentTo(base.camera)
-        clearCardHolder.setDepthTest(False)
-        
-        clearCardHolder.setY(dist)
-        clearCardHolder.setScale(dist)
-        clearCardHolder.setAttrib(DepthTestAttrib.make(RenderAttrib.MAlways))
-        clearCardHolder.setAttrib(ColorWriteAttrib.make(ColorWriteAttrib.MNone))
-        
-        def addTerrainLOD(sort,scale,addDist,removeDist):
-            bg=RenderAutoTiler(rendererFolder,b,tileSize*scale,focus,addDist,removeDist)
-            bg.reparentTo(render)
-            bg.setBin(backBinName,sort)
-            bg.setScale(terrainScale)
-            
-            c=NodePath(cm.generate())
-            c.reparentTo(clearCardHolder)
-            c.setBin(backBinName,sort+1)
-            
-            return bg
-        
-        # Make the background LOD tilers. This causes lots of over draw
-        if useMidLOD: bg1=addTerrainLOD(10,4,1.7,2.0)
-        if useLowLOD: bg2=addTerrainLOD(0,16,1.3,1.4)
+
 
     
     
@@ -193,23 +163,6 @@ class UI(DirectObject):
 ui=UI()
 
 
-# Setup some lights
-# dlight = DirectionalLight('dlight')
-# dlight.setColor(VBase4(0.9, 0.9, 0.8, 1))
-# dlnp = render.attachNewNode(dlight)
-# dlnp.setHpr(0, -30, 0)
-# render.setLight(dlnp)
-# 
-# alight = AmbientLight('alight')
-# alight.setColor(VBase4(0.2, 0.2, 0.4, 1))
-# alnp = render.attachNewNode(alight)
-# render.setLight(alnp)
-# 
-# 
-# dayCycle=dlnp.hprInterval(20.0,Point3(0,360,0))
-#dayCycle.loop()
-
-
 dlight = DirectionalLight('dlight')
 
 dlnp = render.attachNewNode(dlight)
@@ -251,9 +204,9 @@ taskMgr.add(updateLight, "rotating Light")
 
 
 
-        # skybox
+# skybox
 skybox = loader.loadModel('models/skybox.egg')
-#         # make big enough to cover whole terrain, else there'll be problems with the water reflections
+# make big enough to cover whole terrain, else there'll be problems with the water reflections
 skybox.setScale(maxDist*3)
 skybox.setBin('background', 1)
 skybox.setDepthWrite(0)
@@ -380,6 +333,7 @@ class World(keyTracker):
         self.floater.setZ(6)
         self.floater.setY(-1)
         
+        
 
         n.setShaderAuto()
             
@@ -480,4 +434,3 @@ class World(keyTracker):
 
 w = World()
 run()
-

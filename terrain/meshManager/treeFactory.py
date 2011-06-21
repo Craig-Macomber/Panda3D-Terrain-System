@@ -56,26 +56,32 @@ class TreeFactory(gridFactory.GridFactory):
         self.drawTree(LOD,(pos, quat, 0, 0, 0),drawResourcesFactory)
                
     def drawTree(self,LOD,base,drawResourcesFactory):
-        age=random.random()**1.5
+        age=random.random()**3.5
+        
+        
         to = 12*age
         
-        if to<6: return
+        
+        if to<3: return
         xLOD=max(LOD,to/6*LOD)
         
+        leafScaler=age**.5
+        leafSize=10.0*self.scalar*leafScaler
         skipLeaves=0;
         
         if xLOD<.6:
             numVertices=2
             cutoffRadius=.9
-            skipLeaves=.6
+            skipLeaves=.1+(1-leafScaler)*4
         elif xLOD<1:
             numVertices=2
             cutoffRadius=.7
-            skipLeaves=.5
+            skipLeaves=(1-leafScaler)*2
+            #skipLeaves=.5
         elif xLOD<2:
             numVertices=3
             cutoffRadius=.5
-            skipLeaves=.4
+            #skipLeaves=.4
         elif xLOD<3:
             numVertices=3
             cutoffRadius=.2
@@ -219,7 +225,10 @@ class TreeFactory(gridFactory.GridFactory):
                 q.setHpr((random.random()*2*math.pi,0,0))
                 quat=quat*q
                 up=quat.getUp()
-                s=10.0*self.scalar
+                
+                # size
+                
+                s=leafSize
                 dir1=perp1*s
                 dir2=perp2*s
                 bend=-up*(s/4.0)
