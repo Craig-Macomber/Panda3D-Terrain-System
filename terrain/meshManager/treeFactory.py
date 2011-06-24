@@ -1,16 +1,16 @@
 import math, random
 
-from panda3d.core import Vec3, Quat, GeomVertexFormat
+from panda3d.core import Vec3, Quat, GeomVertexFormat, NodePath
 
 import meshManager
 import gridFactory
 
 
 class TreeFactory(gridFactory.GridFactory):
-    def __init__(self,barkTexture=None,leafTexture=None):
+    def __init__(self,barkTexture=None,leafTexture=None,scalar=2.0,gridSize=5.0):
         self.barkTexture=barkTexture
         self.leafTexture=leafTexture
-        gridFactory.GridFactory.__init__(self,2.0,5.0)
+        gridFactory.GridFactory.__init__(self,scalar,gridSize)
         
         self.leafDataIndex={}
         self.trunkDataIndex={}
@@ -21,28 +21,42 @@ class TreeFactory(gridFactory.GridFactory):
         self.highLOD=meshManager.LOD(500,0)
         
     def getLODs(self):
-        return [self.lowLOD,self.midLOD]
+        return [self.minLOD,self.lowLOD,self.midLOD,self.highLOD]
         
     def regesterGeomRequirements(self,LOD,collection):
+        
+        n=NodePath('tmp')
+        
         if self.barkTexture is not None:
+            n.setTexture(self.barkTexture)
+            n.setShaderInput('diffTex',self.barkTexture)
+        
             trunkRequirements=meshManager.GeomRequirements(
                 geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-                texture=self.barkTexture
+                renderState=n.getState()
                 )
         else:
             trunkRequirements=meshManager.GeomRequirements(
                 geomVertexFormat=GeomVertexFormat.getV3n3c4(),
+                renderState=n.getState()
                 )
+        
+        
+        n=NodePath('tmp')
         
         if self.leafTexture is not None:
+            n.setTexture(self.leafTexture)
+            n.setShaderInput('diffTex',self.leafTexture)
+            
             leafRequirements=meshManager.GeomRequirements(
                 geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-                texture=self.leafTexture
+                renderState=n.getState()
                 )
         
         else:
             leafRequirements=meshManager.GeomRequirements(
                 geomVertexFormat=GeomVertexFormat.getV3n3c4(),
+                renderState=n.getState()
                 )
         
         self.trunkDataIndex[LOD]=collection.add(trunkRequirements)

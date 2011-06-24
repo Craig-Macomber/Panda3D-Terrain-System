@@ -8,9 +8,9 @@ import gridFactory
 noFerns=1
 
 class FernFactory(gridFactory.GridFactory):
-    def __init__(self,leafTexture=None):
+    def __init__(self,leafTexture=None,scalar=.25,gridSize=30.0):
         self.leafTexture=leafTexture
-        gridFactory.GridFactory.__init__(self,.25,30.0)
+        gridFactory.GridFactory.__init__(self,scalar=scalar,gridSize=gridSize)
         
         self.leafDataIndex={}
         self.lowLOD=meshManager.LOD(1200,000)

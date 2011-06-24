@@ -48,19 +48,20 @@ class RenderTileBakery(FixedBakery):
     """
     A class the wraps a bakery to produce RenderTiles instead of baked tiles
     """
-    def __init__(self,bakery,tileSize,meshManager):
+    def __init__(self,bakery,tileSize,meshManager,heightScale):
         self.bakery=FixWrapped(bakery,tileSize)
         self.hasTile=bakery.hasTile
         self.makeTile=meshManager.tileFactory(tileSize)#maxDistance=float('inf'),minDistance=0,collision=False)
+        self.heightScale=heightScale
         
     def getTile(self, x, y):
-        return RenderTile(self.bakery.getTile(x, y),self.makeTile)
+        return RenderTile(self.bakery.getTile(x, y),self.makeTile,self.heightScale)
     
     def asyncGetTile(self, x, y, callback, callbackParams=()):
         self.bakery.asyncGetTile(x, y, self._asyncTileDone, (callback,callbackParams))
         
     def _asyncTileDone(self,tile,callback,callbackParams):
-        callback(RenderTile(tile,self.makeTile),*callbackParams)
+        callback(RenderTile(tile,self.makeTile,self.heightScale),*callbackParams)
 
 class RenderTile(NodePath):
     """
@@ -68,10 +69,13 @@ class RenderTile(NodePath):
     
     It could sample its height map instead, but it does not know the height scale.
     """
-    def __init__(self,bakedTile,makeTile):
+    def __init__(self,bakedTile,makeTile,heightScale):
         """
         node = the renderNode this is for
         """
+        self.heightScale=heightScale
+        
+        
         self.bakedTile=bakedTile
         
         NodePath.__init__(self,"renderTile")
@@ -104,12 +108,28 @@ class RenderTile(NodePath):
     
     def height(self,x,y):
         h=self.sampleMap('height',x,y,extraPx=True)
-        return 300*(h.getX()+h.getY()/(256.0)+h.getZ()/(256.0**2))
+        return self.heightScale*(h.getX()+h.getY()/(256.0)+h.getZ()/(256.0**2))
     
-    def sampleMap(self,mapName,x,y,extraPx=False):
+    def sampleMap(self,mapName,x,y,extraPx=True):
+        """
+        
+        x,y in world space
+        
+        extraPx=True means corners of tile are mapped to centers of corner pixels of map,
+        as is the case with the height maps. Good for avoiding seams.
+        
+        extraPx=False not tested for accuracy
+        
+        """
+        
         map=self.bakedTile.renderMaps[mapName]
     
         peeker=map.tex.peek()
+        
+        if peeker is None:
+            print "Error: sampleMap "+mapName+" failed"
+            return 0
+        
         tx=(x-self.bakedTile.x)/self.tileScale
         ty=(y-self.bakedTile.y)/self.tileScale
         
@@ -124,24 +144,23 @@ class RenderTile(NodePath):
             py=(sy*ty)
         
         
-        #u=math.floor(px)/sx
-        #v=math.floor(py)/sy
-        fu=px-math.floor(px)
-        fv=py-math.floor(py)
-        #u2=math.floor(px+1)/sx
-        #v2=math.floor(py)/sy
-        px=math.floor(px)
-        py=math.floor(py)
+        ix=math.floor(px)
+        iy=math.floor(py)
+        fu=px-ix
+        fv=py-iy
+
+        
         
         #peeker.lookup(c,u,v)
         def getH(x,y):
             x=float(max(min(sx,x),0))
             y=float(max(min(sy,y),0))
+            if extraPx:
+                x+=.5
+                y+=.5
             c=Vec4()
             peeker.lookup(c,x/sx,y/sy)
             return c
-        h=(getH(px+1,py+1)*fu+getH(px,py+1)*(1-fu))*fv+(getH(px+1,py)*fu+getH(px,py)*(1-fu))*(1-fv)
-        
-        #peeker.filterRect(c,px/sx,py/sy,px/sx,py/sy)
+        h=(getH(ix+1,iy+1)*fu+getH(ix,iy+1)*(1-fu))*fv+(getH(ix+1,iy)*fu+getH(ix,iy)*(1-fu))*(1-fv)
         return h
     

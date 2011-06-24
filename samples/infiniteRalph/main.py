@@ -91,9 +91,9 @@ else:
     LODCutoffs=[float('inf'),2000,1000,500,300]
 
     meshManager=terrain.meshManager.meshManager.MeshManager(factories)
-    rtb=RenderTileBakery(b,tileSize,meshManager)
+    rtb=RenderTileBakery(b,tileSize,meshManager,heightScale)
     
-    n=RenderNodeTiler(rtb,tileSize,focus,forceRenderedCount=2,maxRenderedCount=3)
+    n=RenderNodeTiler(rtb,tileSize,focus,forceRenderedCount=2,maxRenderedCount=3,)
     
     #x=RenderNode(rendererFolder,n)
     
