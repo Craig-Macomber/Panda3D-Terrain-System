@@ -13,24 +13,28 @@ class FernFactory(gridFactory.GridFactory):
         gridFactory.GridFactory.__init__(self,.25,30.0)
         
         self.leafDataIndex={}
+        self.lowLOD=meshManager.LOD(1200,000)
+        self.midLOD=meshManager.LOD(800,000)
+        
+    def getLODs(self):
+        return [self.lowLOD,self.midLOD]
         
     def regesterGeomRequirements(self,LOD,collection):
-        if LOD>noFerns:
-            if self.leafTexture:
-                leafRequirements=meshManager.GeomRequirements(
-                    geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-                    texture=leafTexture
-                    )
-            else:
-                leafRequirements=meshManager.GeomRequirements(
-                    geomVertexFormat=GeomVertexFormat.getV3n3c4(),
-                    )
-            
-            
-            self.leafDataIndex[LOD]=collection.add(leafRequirements)
+        
+        if self.leafTexture:
+            leafRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=GeomVertexFormat.getV3n3t2(),
+                texture=leafTexture
+                )
+        else:
+            leafRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=GeomVertexFormat.getV3n3c4(),
+                )
+        
+        
+        self.leafDataIndex[LOD]=collection.add(leafRequirements)
         
     def drawItem(self,LOD,x,y,drawResourcesFactory,tile,tileCenter,seed=True):
-        if LOD<=noFerns: return
         if seed: random.seed((x,y))
         exists=random.random()
         if exists<.6: return
@@ -47,12 +51,11 @@ class FernFactory(gridFactory.GridFactory):
         
         count=int((scalar**.7)*12)
         
-        if LOD<3:
-            if scale<.8: return
-            if count*scale<10: return
-        elif LOD<4:
-            if scale<.5: return
-            if count*scale<6: return
+        if scale<.8:
+            if LOD==self.lowLOD: return
+        else:
+            if LOD==self.midLOD: return
+        
         
         leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex[LOD])
         leafTri=leafResources.getGeomTriangles()

@@ -1,5 +1,8 @@
-from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat, GeomTriangles, GeomTristrips, LODNode, Vec3
+from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat, GeomTriangles, GeomTristrips, LODNode, Vec3, RenderState
 import math
+
+import collections
+import heapq
 
 from terrain import tileUtil
 
@@ -23,72 +26,229 @@ Panda3D's python wrapper.
 However, even in pure python, reasonable performance can be achieved with this system!
 """
 
-class LODLevel(object):
-    def __init__(self,index,maxDst,minDst,factories):
+class _LODLevel(object):
+    """
+    this is very explicitly NOT threadsafe in any way,
+    and makes most of the other stuff also not thread safe
+    """
+    def __init__(self,lod,factories):
+        """
+        factoriesAndLODs should be list of (LOD,MeshFactory)
+        
+        
+        
+        """
         self.factories=factories
         self.geomRequirementsCollection=GeomRequirementsCollection()
-        self.index=index
-        self.maxDst=maxDst
-        self.minDst=minDst
-        self.factories=factories
-        for c in factories:
-            c.regesterGeomRequirements(index,self.geomRequirementsCollection)
+        self.lod=lod
+        for f in factories:
+            f.regesterGeomRequirements(lod,self.geomRequirementsCollection)
+        
+        self.makingTile=False
+        self.drawResourcesFactory=None 
+        
+    def initForTile(self,tile):
+        assert not self.makingTile
+        self.drawResourcesFactory=self.geomRequirementsCollection.getDrawResourcesFactory(tile)
+        self.makingTile=True
+        
+#     def doFactory(self,f,x,y,x2,y2,tileCenter):
+#         assert self.makingTile
+#         if self.drawResourcesFactory is not None:
+#             f.draw(self.lod,x,y,x2,y2,drawResourcesFactory,tileCenter)
     
-    def makeTile(self,x,y,x2,y2,tile,tileCenter):
-        drawResourcesFactory=self.geomRequirementsCollection.getDrawResourcesFactory(tile)
-        if drawResourcesFactory is None:
-            return None
+    def finishTile(self):
+        assert self.makingTile
+        self.node = self.drawResourcesFactory.getNodePath()
+    
+    def clean(self):
+        assert self.makingTile
+        self.makingTile=False
+        self.node=None
+        self.drawResourcesFactory=None
         
-        for c in self.factories:
-            c.draw(self.index,x,y,x2,y2,drawResourcesFactory,tileCenter)
-        
-        
-        nodePath=drawResourcesFactory.getNodePath()
-        
-        #if nodePath is None: return
+#     def makeTile(self,x,y,x2,y2,tile,tileCenter):
+#         """
+#         Returns a NodePath is geometry was needed, If empty, may return None
+#         """
+#         
+#         drawResourcesFactory=self.geomRequirementsCollection.getDrawResourcesFactory(tile)
+#         if drawResourcesFactory is None:
+#             return None
+#         
+#         for f in factories:
+#             f.draw(self.lod,x,y,x2,y2,drawResourcesFactory,tileCenter)
+#         
+#         nodePath=drawResourcesFactory.getNodePath()
+# 
+#         return nodePath
 
-        return nodePath
 
-        
+LOD=collections.namedtuple("LOD",["high","low"])
     
 class MeshManager(NodePath):
     """
     A NodePath that will fill it self with meshes, with proper blocking and LOD
     
     meshes come from passed in factories
-    """
-    def __init__(self,factories,LODCutoffs=(float('inf'),)):
-        """
-        LODCutoffs == list of max view distances for the LOD levels
-        Low LODs (high distances) should be first. Bottom cutoff of 0 should not be included.
-        
-        """
-        self.factories=factories
-        self.LODCutoffs=list(LODCutoffs)
-        self.LODCutoffs.append(0)
-        self.LODLevels=[]
-        last=LODCutoffs[0]#float('inf')
-        for i in xrange(len(self.LODCutoffs)-1):
-            self.LODLevels.append(LODLevel(i,self.LODCutoffs[i],self.LODCutoffs[i+1],factories))
     
-    def makeTile(self,x,y,x2,y2,tile,minLODindex=0,maxLODindex=None):
-        if maxLODindex is None: maxLODindex=len(self.LODLevels)-1
-        tileCenter=Vec3(x+x2,y+y2,0)/2
-        if minLODindex==maxLODindex:
-            n=self.LODLevels[maxLODindex].makeTile(x,y,x2,y2,tile,tileCenter)
-            n.setPos(tileCenter)
-            return n
-        lodNode=LODNode('tile_lod')
-        lodNodePath=NodePath(lodNode)
+    this is optimized around a high number of factories, meaning that if LOD transitions line up
+    it may produce less than one geom per factory per tile
+    (aka, it draws all compataible factories into the same geoms)
+    
+    """
+    def __init__(self,factories):
+
+        self.factories=factories
         
-        lodNodePath.setPos(tileCenter)
-        for i in xrange(minLODindex,maxLODindex+1):
-            n=self.LODLevels[i].makeTile(x,y,x2,y2,tile,tileCenter)
-            if n is not None:
-                n.reparentTo(lodNodePath)
-                lodNode.addSwitch(self.LODCutoffs[i],self.LODCutoffs[i+1])
+        # collect all LODs in a useful data structure
+        LODtoFact=collections.defaultdict(set)
+        for f in factories:
+            LODs=f.getLODs()
+            for l in LODs:
+                LODtoFact[l].add(f)
+        
+        # make the _LODLevels
+        LODtoLevel={}
+        for lod,facs in LODtoFact.iteritems():
+            LODtoLevel[lod]=_LODLevel(lod,facs)
+        
+        
+        # we could render everything just using the _LODLevels
+        # but this would require lots of LOD nodes at the top level
+        # so the rest of this init code takes all of these potentially overlapping LOD ranges
+        # and makes a list of LOD ranges and the levels they contain
+        # this means one top level LOD node. It may have a few nodes under it,
+        # but this keeps the critical case of rendering low LODs with few nodes very optimal,
+        # and takes advantage factories that don't have LOD levels out to the max distance
+        
+        # some constants for clarity
+        # high sorts before low when the values are the same
+        high=0 # reffers to distance, not LOD level
+        low=1  # reffers to distance, not LOD level
+        
+        end=collections.namedtuple("end",["value","end","lod"])
+        ends=[] # list of (value,high/low,lod)
+        
+        for lod in LODtoFact.iterkeys():
+            ends.append(end(lod.high,high,lod))
+            ends.append(end(lod.low,low,lod))
+        
+        ends.sort()
+        
+        
+        
+        # list of (LOD,set of _LODLevels) that should be rendered
+        # during that range
+        # overall list is in closer to further order
+        self.LODtoLevels=[]
+        
+        
+        # walk up ends, creating all the LOD levels needed
+        # a somewhat confusing but interesting and efficent algorithm
+        activeSet=set() # set of LODs
+        lastEnd=(0,low,None)
+        currentStart=0
+        i=0
+        while i<len(ends):
+            
+            # add all LOD ranges starting at the currentStart
+            while ends[i].end==low and ends[i].value==currentStart:
+                activeSet.add(ends[i].lod)
+                i+=1
+            
+            # save LOD range if appropriate 
+            if len(activeSet)>0: 
+                levels=set(LODtoLevel[lod] for lod in set(activeSet))
+                self.LODtoLevels.append((LOD(ends[i].value,currentStart),levels))
+            
+            # remove all LODs (if any) ending at the end of the LOD span we just saved
+            currentStart=ends[i].value
+            while i<len(ends) and ends[i].end==high and ends[i].value==currentStart:
+                activeSet.discard(ends[i].lod)
+                i+=1
+        
+    def tileFactory(self,size,maxDistance=float('inf'),minDistance=0,collision=False):
+        """
+        maxDistance=max view distance (for minimum LOD)
+        minDistance=min view distance (for maximum LOD)
+        """
+        levels=set()
+        # self.LODtoLevels is ordered, so this could be speed up a bit, but the time it takes
+        # is insignificant, and is only part of setup.
+        LODAndLevelList=[]
+        for lod,levelSet in self.LODtoLevels:
+            if lod.high>minDistance and lod.low<maxDistance:
+                levels.update(levelSet)
+                LODAndLevelList.append((lod,list(levelSet)))
+        
+        
+        
+        factoryToLevels=collections.defaultdict(list)
+        for l in levels:
+            for f in l.factories:
+                factoryToLevels[f].append(l)
+        
+        # subTileFactories are makeTile closures made for smaller tiles
+        # smaller sub tiles are needed for LOD to work properly for distances
+        # on the scale of and smaller than the tile size
+        # so the LODs can transition on part of the parent tile at a time
+        
+        # TODO : use sub tile factories!
+        subTileFactories=[]
+        LODtoSubTileFactoryIndexs={}
+        
+        def makeTile(x,y,tile):
+            # the idea here is to make
+            # all the needed nodes,
+            # then instance them to all the LODNode's children that show them
+            
+            x2=x+size
+            y2=y+size
+            
+            tileCenter=Vec3(x+x2,y+y2,0)/2
+            
+            for l in levels: l.initForTile(tile)
+            for f,levs in factoryToLevels.iteritems():
+                f.draw(dict((l.lod,l.drawResourcesFactory) for l in levs),x,y,x2,y2,tileCenter)
                 
-        return lodNodePath
+            
+            lodNode=LODNode('tile_lod')
+            lodNodePath=NodePath(lodNode)
+            
+            subTileNodeLists=[]
+            s=size/2
+            for f in subTileFactories:
+                nodeList=[f(x,y,tile),f(x+s,y,tile),f(x,y+s,tile),f(x+s,y+s,tile)]
+                subTileNodeLists.append(nodeList)
+            
+            for l in levels: l.finishTile()
+            
+            lodNodePath.setPos(tileCenter)
+            for lod,levs in LODAndLevelList:
+                holder=NodePath("holder")
+                # instance regular meshes 
+                for l in levs:
+                    n=l.node
+                    if n is not None:
+                        n.instanceTo(holder)
+                # instance subtile LOD nodes 
+                if lod in LODtoSubTileFactoryIndexs:
+                    for i in LODtoSubTileFactoryIndexs[lod]:
+                        for n in subTileNodeLists[i]:
+                            instanceTo(holder)
+                            
+                holder.reparentTo(lodNodePath)
+                lodNode.addSwitch(lod.high,lod.low)
+            
+            # TODO, better center LOD Node using bounds
+            # lodNode.setCenter()
+            
+            for l in levels: l.clean()
+            
+            return lodNodePath
+        return makeTile
+
         
 class MeshFactory(object):
     def regesterGeomRequirements(self,LOD,collection):
@@ -98,32 +258,29 @@ class MeshFactory(object):
         example:
         self.trunkData=collection.add(GeomRequirements(...))
         """
-        pass
+        raise NotImplementedError()
     
-    def getLodThresholds(self):
-        # perhaps this should also have some approximate cost stats for efficent graceful degradation
-        return [] # list of values at which rendering changes somewhat
+    def getLODs(self):
+        raise NotImplementedError()
+        #return [] # list of values at which rendering changes somewhat
     
-    def draw(self,LOD,x,y,x1,y1,drawResourcesFactory,tileCenter):
-        pass # gets called with all entries in getGeomRequirements(LOD)
+    def draw(self,drawResourcesFactories,x,y,x1,y1,tileCenter):
+        raise NotImplementedError()#pass # gets called with all entries in getGeomRequirements(LOD)
     
     
-# gonna need to add more fields to this, such as texture modes, multitexture, clamp, tile, mipmap etc.
-# perhaps even include some scale bounds for textures to allow them to be scaled down when palatizing
+# TODO : consider palletizing textures
 class GeomRequirements(object):
     """
     a set of requirements for one part of mesh.
     this will get translated to a single geom, or a nodePath as needed,
     and merged with matching requirements
     """
-    def __init__(self,geomVertexFormat,texture=None,transparency=False,shaderSettings=None,maps=None):
+    def __init__(self,geomVertexFormat,renderState=RenderState.makeEmpty()):
         self.geomVertexFormat=geomVertexFormat
-        self.texture=texture
-        self.transparency=transparency
-        self.shaderSettings=[] if shaderSettings is None else shaderSettings
-        self.maps=[] if maps is None else maps 
+        self.renderState=renderState
     def __eq__(self,other):
-         return False # TODO
+         return (self.renderState.getUnique()==other.renderState.getUnique()
+                and self.geomVertexFormat==other.geomVertexFormat)
 
     
 class DrawResources(object):
@@ -175,15 +332,17 @@ class DrawResources(object):
         if self._geomTristrips is not None:
             g=self._getGeom()
             g.addPrimitive(self._geomTristrips)
-        
+
+
+# TODO : remove this infavor of using per geom renderStates
 class _DrawNodeSpec(object):
     """
     spec for what properties are needed on the
     NodePath assoiated with a DrawResources/GeomRequirements
     """
-    def __init__(self,parentIndex,texture=None):
+    def __init__(self,parentIndex,renderState=RenderState.makeEmpty()):
         # parentIndex of -1 == root
-        self.texture=texture
+        self.renderState=renderState
         self.parentIndex=parentIndex
 
 
@@ -217,7 +376,7 @@ class GeomRequirementsCollection(object):
             # TODO : analize requirements on nodes and design hierarchy to minimize state transitions
             self.drawNodeSpecs=[_DrawNodeSpec(-1)]
             for e in self.entries:
-                self.drawNodeSpecs.append(_DrawNodeSpec(0,texture=e.texture))
+                self.drawNodeSpecs.append(_DrawNodeSpec(0,renderState=e.renderState))
            
             self.entryTodrawNodeSpec=range(1,len(self.entries)+1)
             
@@ -267,9 +426,7 @@ class DrawResourcesFactory(object):
         self.nodePaths[nodeIndex]=np
         
         # setup render atributes on np here:
-        if s.texture is not None:
-            np.setTexture(s.texture)
-            np.setShaderInput("diffTex",s.texture)
+        np.setState(s.renderState)
         
         return np
         

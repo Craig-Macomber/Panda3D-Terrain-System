@@ -76,20 +76,25 @@ class GroundFactory(meshManager.MeshFactory):
 #                     print 'Invalid source for '+name+' int Tex2D'
         
         
-        
+        self.LOD=meshManager.LOD(float('inf'),0)
+    
+    def getLODs(self):
+        return [self.LOD]
         
         
     def regesterGeomRequirements(self,LOD,collection):
         # for now, going to use our own node, so we don't have any special requirements
+        assert LOD==self.LOD
         requirements=meshManager.GeomRequirements(
                 geomVertexFormat=GeomVertexFormat.getV3n3t2()
                 )
         
         self.dataIndex[LOD]=collection.add(requirements)
-        
-    def draw(self,LOD,x0,y0,x1,y1,drawResourcesFactory,tileCenter):
+    
+    def draw(self,drawResourcesFactories,x,y,x1,y1,tileCenter):
+        drawResourcesFactory=drawResourcesFactories[self.LOD]
         tile=drawResourcesFactory.getTile()
-        resources=drawResourcesFactory.getDrawResources(self.dataIndex[LOD])
+        resources=drawResourcesFactory.getDrawResources(self.dataIndex[self.LOD])
         
         # Set up the GeoMipTerrain
         terrain = GeoMipTerrain("TerrainTile")
@@ -163,4 +168,4 @@ class GroundFactory(meshManager.MeshFactory):
             return 0.0
 
         
-        tile.height=height
+        #tile.height=height

@@ -5,7 +5,6 @@ from panda3d.core import Vec3, Quat, GeomVertexFormat
 import meshManager
 import gridFactory
 
-noTrees=-1
 
 class TreeFactory(gridFactory.GridFactory):
     def __init__(self,barkTexture=None,leafTexture=None):
@@ -15,34 +14,41 @@ class TreeFactory(gridFactory.GridFactory):
         
         self.leafDataIndex={}
         self.trunkDataIndex={}
+        
+        self.minLOD=meshManager.LOD('inf',2000)
+        self.lowLOD=meshManager.LOD(2000,1000)
+        self.midLOD=meshManager.LOD(1000,500)
+        self.highLOD=meshManager.LOD(500,0)
+        
+    def getLODs(self):
+        return [self.lowLOD,self.midLOD]
+        
     def regesterGeomRequirements(self,LOD,collection):
-       if LOD>noTrees:
-            if self.barkTexture is not None:
-                trunkRequirements=meshManager.GeomRequirements(
-                    geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-                    texture=self.barkTexture
-                    )
-            else:
-                trunkRequirements=meshManager.GeomRequirements(
-                    geomVertexFormat=GeomVertexFormat.getV3n3c4(),
-                    )
-            
-            if self.leafTexture is not None:
-                leafRequirements=meshManager.GeomRequirements(
-                    geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-                    texture=self.leafTexture
-                    )
-            
-            else:
-                leafRequirements=meshManager.GeomRequirements(
-                    geomVertexFormat=GeomVertexFormat.getV3n3c4(),
-                    )
-            
-            self.trunkDataIndex[LOD]=collection.add(trunkRequirements)
-            self.leafDataIndex[LOD]=collection.add(leafRequirements)
+        if self.barkTexture is not None:
+            trunkRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=GeomVertexFormat.getV3n3t2(),
+                texture=self.barkTexture
+                )
+        else:
+            trunkRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=GeomVertexFormat.getV3n3c4(),
+                )
+        
+        if self.leafTexture is not None:
+            leafRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=GeomVertexFormat.getV3n3t2(),
+                texture=self.leafTexture
+                )
+        
+        else:
+            leafRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=GeomVertexFormat.getV3n3c4(),
+                )
+        
+        self.trunkDataIndex[LOD]=collection.add(trunkRequirements)
+        self.leafDataIndex[LOD]=collection.add(leafRequirements)
     
     def drawItem(self,LOD,x,y,drawResourcesFactory,tile,tileCenter,seed=True):
-        if LOD<=noTrees: return
         if seed: random.seed((x,y))
         exists=random.random()
         if exists<.9: return
@@ -63,31 +69,23 @@ class TreeFactory(gridFactory.GridFactory):
         
         
         if to<3: return
-        xLOD=max(LOD,to/6*LOD)
         
         leafScaler=age**.5
         leafSize=10.0*self.scalar*leafScaler
         skipLeaves=0;
         
-        if xLOD<.6:
-            numVertices=2
-            cutoffRadius=.9
-            skipLeaves=.1+(1-leafScaler)*4
-        elif xLOD<1:
+        if LOD==self.minLOD:
             numVertices=2
             cutoffRadius=.7
             skipLeaves=(1-leafScaler)*2
             #skipLeaves=.5
-        elif xLOD<2:
+        elif LOD==self.lowLOD:
             numVertices=3
             cutoffRadius=.5
             #skipLeaves=.4
-        elif xLOD<3:
-            numVertices=3
-            cutoffRadius=.2
-        elif xLOD<4:
-            numVertices=5
-            cutoffRadius=-1
+        elif LOD==self.midLOD:
+            numVertices=4
+            cutoffRadius=.1
         else:
             numVertices=6
             cutoffRadius=-1

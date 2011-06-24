@@ -51,16 +51,16 @@ class RenderTileBakery(FixedBakery):
     def __init__(self,bakery,tileSize,meshManager):
         self.bakery=FixWrapped(bakery,tileSize)
         self.hasTile=bakery.hasTile
-        self.meshManager=meshManager
+        self.makeTile=meshManager.tileFactory(tileSize)#maxDistance=float('inf'),minDistance=0,collision=False)
         
     def getTile(self, x, y):
-        return RenderTile(self.bakery.getTile(x, y),self.meshManager)
+        return RenderTile(self.bakery.getTile(x, y),self.makeTile)
     
     def asyncGetTile(self, x, y, callback, callbackParams=()):
         self.bakery.asyncGetTile(x, y, self._asyncTileDone, (callback,callbackParams))
         
     def _asyncTileDone(self,tile,callback,callbackParams):
-        callback(RenderTile(tile,self.meshManager),*callbackParams)
+        callback(RenderTile(tile,self.makeTile),*callbackParams)
 
 class RenderTile(NodePath):
     """
@@ -68,7 +68,7 @@ class RenderTile(NodePath):
     
     It could sample its height map instead, but it does not know the height scale.
     """
-    def __init__(self,bakedTile,meshManager):
+    def __init__(self,bakedTile,makeTile):
         """
         node = the renderNode this is for
         """
@@ -93,7 +93,8 @@ class RenderTile(NodePath):
         y2=y+bakedTile.scale
         
         
-        self.meshes=meshManager.makeTile(x,y,x2,y2,self)
+        self.meshes=makeTile(x,y,self)
+        
         if self.meshes is None:
             self.meshes=NodePath("EmptyMeshes")
         self.meshes.reparentTo(self)
@@ -101,7 +102,11 @@ class RenderTile(NodePath):
     def update(self,focus):
         self.meshes.update(focus)
     
-    def sampleMap(self,mapName,x,y):
+    def height(self,x,y):
+        h=self.sampleMap('height',x,y,extraPx=True)
+        return 300*(h.getX()+h.getY()/(256.0)+h.getZ()/(256.0**2))
+    
+    def sampleMap(self,mapName,x,y,extraPx=False):
         map=self.bakedTile.renderMaps[mapName]
     
         peeker=map.tex.peek()
@@ -110,8 +115,13 @@ class RenderTile(NodePath):
         
         sx=peeker.getXSize()
         sy=peeker.getYSize()
-        px=(sx*tx)
-        py=(sy*ty)
+        
+        if extraPx:
+            px=((sx-1)*tx)
+            py=((sy-1)*ty)
+        else:
+            px=(sx*tx)
+            py=(sy*ty)
         
         
         #u=math.floor(px)/sx
@@ -125,6 +135,8 @@ class RenderTile(NodePath):
         
         #peeker.lookup(c,u,v)
         def getH(x,y):
+            x=float(max(min(sx,x),0))
+            y=float(max(min(sy,y),0))
             c=Vec4()
             peeker.lookup(c,x/sx,y/sy)
             return c

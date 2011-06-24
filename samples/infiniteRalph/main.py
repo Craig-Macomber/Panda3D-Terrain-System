@@ -90,7 +90,7 @@ else:
     
     LODCutoffs=[float('inf'),2000,1000,500,300]
 
-    meshManager=terrain.meshManager.meshManager.MeshManager(factories,LODCutoffs)
+    meshManager=terrain.meshManager.meshManager.MeshManager(factories)
     rtb=RenderTileBakery(b,tileSize,meshManager)
     
     n=RenderNodeTiler(rtb,tileSize,focus,forceRenderedCount=2,maxRenderedCount=3)
@@ -137,17 +137,19 @@ class UI(DirectObject):
         print ""
         render.analyze()
         print ""
-        if rendererClass is GeoClipMapper: return
-        print n.tilesMade," Tiles Made for high LOD"
-        print len(n.getTiles()), " Tiles displaying for high LOD"
-        
-        if useMidLOD:
-            print bg1.tilesMade," Tiles Made for mid LOD"
-            print len(bg1.getTiles()), " Tiles displaying for mid LOD"
-        if useLowLOD:
-            print bg2.tilesMade," Tiles Made for low LOD"
-            print len(bg2.getTiles()), " Tiles displaying for low LOD"
-        
+        render.ls()
+        print ""
+#         if rendererClass is GeoClipMapper: return
+#         print n.tilesMade," Tiles Made for high LOD"
+#         print len(n.getTiles()), " Tiles displaying for high LOD"
+#         
+#         if useMidLOD:
+#             print bg1.tilesMade," Tiles Made for mid LOD"
+#             print len(bg1.getTiles()), " Tiles displaying for mid LOD"
+#         if useLowLOD:
+#             print bg2.tilesMade," Tiles Made for low LOD"
+#             print len(bg2.getTiles()), " Tiles displaying for low LOD"
+#         
     def color(self):
         if rendererClass is GeoClipMapper: return
         if useMidLOD:
