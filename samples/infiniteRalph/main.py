@@ -64,7 +64,7 @@ camLens.setFar(maxDist*20)
 base.cam.node().setLens(camLens)
 
 
-tileSize=400.0
+tileSize=200.0
 terrainScale=1.0
 
 focus=NodePath("tilerFocuse")
@@ -79,10 +79,10 @@ else:
     # Create a bakery that uses the "bakeryTiler" folder for its resources
     b = selectedBakery(None,sampleDir+"bakeryTiler")
     #Make the main (highest LOD) tiler
-    barkTexture=None
-    leafTexture=None
+    barkTexture=loader.loadTexture("textures/barkTexture.jpg")
+    leafTexture=loader.loadTexture("textures/material-10-cl.png")
     tf=terrain.meshManager.treeFactory.TreeFactory(barkTexture=barkTexture,leafTexture=leafTexture)
-    ff=terrain.meshManager.fernFactory.FernFactory()
+    ff=terrain.meshManager.fernFactory.FernFactory(leafTexture)
     heightScale=300
     gf=terrain.meshManager.groundFactory.GroundFactory(rendererFolder,heightScale=heightScale)
     
@@ -93,7 +93,7 @@ else:
     meshManager=terrain.meshManager.meshManager.MeshManager(factories)
     rtb=RenderTileBakery(b,tileSize,meshManager,heightScale)
     
-    n=RenderNodeTiler(rtb,tileSize,focus,forceRenderedCount=2,maxRenderedCount=3,)
+    n=RenderNodeTiler(rtb,tileSize,focus,forceRenderedCount=2,maxRenderedCount=6,)
     
     #x=RenderNode(rendererFolder,n)
     

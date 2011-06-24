@@ -1,6 +1,6 @@
 import math, random
 
-from panda3d.core import Vec3, Quat, GeomVertexFormat
+from panda3d.core import Vec3, Quat, GeomVertexFormat, NodePath
 
 import meshManager
 import gridFactory
@@ -21,10 +21,14 @@ class FernFactory(gridFactory.GridFactory):
         
     def regesterGeomRequirements(self,LOD,collection):
         
-        if self.leafTexture:
+        n=NodePath('tmp')
+        
+        if self.leafTexture is not None:
+            n.setTexture(self.leafTexture)
+            n.setShaderInput('diffTex',self.leafTexture)
             leafRequirements=meshManager.GeomRequirements(
                 geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-                texture=leafTexture
+                renderState=n.getState()
                 )
         else:
             leafRequirements=meshManager.GeomRequirements(
