@@ -115,9 +115,7 @@ base.setBackgroundColor(.3,.3,.8,0)
 class UI(DirectObject):
     def __init__(self):
         self.accept("v", base.bufferViewer.toggleEnable)
-        self.accept("p", self.save)
         self.accept("x", self.analize)
-        self.accept("c", self.color)
         self.accept("o", base.toggleWireframe)
         self.accept("u", base.oobe)
         self.accept("y", base.oobeCull)
@@ -125,13 +123,7 @@ class UI(DirectObject):
         
         base.bufferViewer.setPosition("llcorner")
         base.bufferViewer.setCardSize(.25, 0.0)
-        
-    def save(self):
-        if rendererClass is GeoClipMapper: return
-        i=0
-        for t in n.getTiles():
-            t.bakedTile.saveMaps("pics/map_"+str(i)+"_")
-            i+=1
+
             
     def analize(self):
         print ""
@@ -139,29 +131,7 @@ class UI(DirectObject):
         print ""
         render.ls()
         print ""
-#         if rendererClass is GeoClipMapper: return
-#         print n.tilesMade," Tiles Made for high LOD"
-#         print len(n.getTiles()), " Tiles displaying for high LOD"
-#         
-#         if useMidLOD:
-#             print bg1.tilesMade," Tiles Made for mid LOD"
-#             print len(bg1.getTiles()), " Tiles displaying for mid LOD"
-#         if useLowLOD:
-#             print bg2.tilesMade," Tiles Made for low LOD"
-#             print len(bg2.getTiles()), " Tiles displaying for low LOD"
-#         
-    def color(self):
-        if rendererClass is GeoClipMapper: return
-        if useMidLOD:
-            if bg1.hasColor():
-                bg1.clearColor()
-            else:
-                bg1.setColor(1,.5,.5)
-        if useLowLOD:
-            if bg2.hasColor():
-                bg2.clearColor()
-            else:
-                bg2.setColor(.3,.3,2)
+
 ui=UI()
 
 
@@ -274,12 +244,10 @@ class World(keyTracker):
         self.inst2 = addInstructions(0.90, "WASD + Mouse (Or arrow Keys)")
         self.inst3 = addInstructions(0.85, "Shift for hyper")
         self.inst3 = addInstructions(0.80, "X for analyze")
-        self.inst3 = addInstructions(0.75, "C tints mid LOD")
         self.inst3 = addInstructions(0.70, "V toggles buffer viewer")
         self.inst3 = addInstructions(0.65, "U toggles oobe")
         self.inst3 = addInstructions(0.60, "Y toggles oobeCull")
         self.inst3 = addInstructions(0.55, "O toggles Wireframe")
-        self.inst3 = addInstructions(0.50, "P dumps rendered maps to disk")
         
         # Create the main character, Ralph
 
