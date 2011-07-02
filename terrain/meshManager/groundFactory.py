@@ -91,7 +91,7 @@ class GroundFactory(meshManager.MeshFactory):
         
         self.dataIndex[LOD]=collection.add(requirements)
     
-    def draw(self,drawResourcesFactories,x,y,x1,y1,tileCenter):
+    def draw(self,drawResourcesFactories,x,y,x1,y1,tileCenter,collision):
         drawResourcesFactory=drawResourcesFactories[self.LOD]
         tile=drawResourcesFactory.getTile()
         resources=drawResourcesFactory.getDrawResources(self.dataIndex[self.LOD])

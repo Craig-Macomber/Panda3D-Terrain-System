@@ -208,9 +208,11 @@ class MeshManager(NodePath):
             
             tileCenter=Vec3(x+x2,y+y2,0)/2
             
+            collisionNode=NodePath("tile_collisionNode") if collision else None
+            
             for l in levels: l.initForTile(tile)
             for f,levs in factoryToLevels.iteritems():
-                f.draw(dict((l.lod,l.drawResourcesFactory) for l in levs),x,y,x2,y2,tileCenter)
+                f.draw(dict((l.lod,l.drawResourcesFactory) for l in levs),x,y,x2,y2,tileCenter,collisionNode)
                 
             
             lodNode=LODNode('tile_lod')
@@ -246,7 +248,13 @@ class MeshManager(NodePath):
             
             for l in levels: l.clean()
             
-            return lodNodePath
+            if collision:
+                tileHolder=NodePath("tile_holder")
+                collisionNode.reparentTo(tileHolder)
+                lodNodePath.reparentTo(tileHolder)
+                return tileHolder
+            else:
+                return lodNodePath
         return makeTile
 
         

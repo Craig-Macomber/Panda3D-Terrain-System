@@ -51,7 +51,7 @@ class RenderTileBakery(FixedBakery):
     def __init__(self,bakery,tileSize,meshManager,heightScale):
         self.bakery=FixWrapped(bakery,tileSize)
         self.hasTile=bakery.hasTile
-        self.makeTile=meshManager.tileFactory(tileSize)#maxDistance=float('inf'),minDistance=0,collision=False)
+        self.makeTile=meshManager.tileFactory(tileSize,collision=True)#maxDistance=float('inf'),minDistance=0,collision=False)
         self.heightScale=heightScale
         
     def getTile(self, x, y):

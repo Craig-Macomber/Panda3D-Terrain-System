@@ -6,11 +6,11 @@ import meshManager
 import gridFactory
 
 
-class TreeFactory(gridFactory.GridFactory):
+class TreeFactory(gridFactory.GridFactory2):
     def __init__(self,barkTexture=None,leafTexture=None,scalar=2.0,gridSize=5.0):
         self.barkTexture=barkTexture
         self.leafTexture=leafTexture
-        gridFactory.GridFactory.__init__(self,scalar,gridSize)
+        gridFactory.GridFactory2.__init__(self,scalar,gridSize)
         
         self.leafDataIndex={}
         self.trunkDataIndex={}
@@ -62,7 +62,11 @@ class TreeFactory(gridFactory.GridFactory):
         self.trunkDataIndex[LOD]=collection.add(trunkRequirements)
         self.leafDataIndex[LOD]=collection.add(leafRequirements)
     
-    def drawItem(self,LOD,x,y,drawResourcesFactory,tile,tileCenter,seed=True):
+    def drawItem(self,drawResourcesFactories,x,y,tileCenter,collision,seed=True):
+        v=drawResourcesFactories.values()
+        if len(v)<1: return
+        tile=v[0].getTile()
+        
         if seed: random.seed((x,y))
         exists=random.random()
         if exists<.9: return
@@ -73,68 +77,19 @@ class TreeFactory(gridFactory.GridFactory):
         heightOffset=-0.4 # make sure whole bottom of tree is in ground
         pos=Vec3(x,y,tile.height(x,y)+heightOffset)-tileCenter
         
-        self.drawTree(LOD,(pos, quat, 0, 0, 0),drawResourcesFactory)
+        self.drawTree((pos, quat, 0, list(0 for x in drawResourcesFactories.iterkeys()), 0),drawResourcesFactories)
                
-    def drawTree(self,LOD,base,drawResourcesFactory):
+    def drawTree(self,base,drawResourcesFactories):
         age=random.random()**3.5
-        
-        
         to = 12*age
-        
-        
         if to<3: return
         
         leafScaler=age**.5
         leafSize=10.0*self.scalar*leafScaler
-        skipLeaves=0;
-        
-        if LOD==self.minLOD:
-            numVertices=2
-            cutoffRadius=.7
-            skipLeaves=(1-leafScaler)*2
-            #skipLeaves=.5
-        elif LOD==self.lowLOD:
-            numVertices=3
-            cutoffRadius=.5
-            #skipLeaves=.4
-        elif LOD==self.midLOD:
-            numVertices=4
-            cutoffRadius=.1
-        else:
-            numVertices=6
-            cutoffRadius=-1
-        
-        doLeaves=True
-        
-        
-        
-        
-        
-        dotCount=1#int((2/age))
-        
-        leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex[LOD])
-        leafTri=leafResources.getGeomTriangles()
-        trunkResources=drawResourcesFactory.getDrawResources(self.trunkDataIndex[LOD])
-        lines = trunkResources.getGeomTristrips()
-        vertWriter = trunkResources.getWriter("vertex")
-        normalWriter = trunkResources.getWriter("normal")
-        if self.barkTexture:
-            texWriter = trunkResources.getWriter("texcoord")
-        else:
-            colorWriter = trunkResources.getWriter("color")
-        
-        
-        leafVertexWriter=leafResources.getWriter("vertex")
-        leafNormalWriter=leafResources.getWriter("normal")
-        
-        if self.leafTexture:
-            leafTexcoordWriter = leafResources.getWriter("texcoord")
-        else:
-            leafColorWriter = leafResources.getWriter("color")
         
         
         maxbend=40+random.random()*20
-        
+            
         forks=int(to/2-1)
         lengthList=[]
         numCopiesList=[]
@@ -156,65 +111,112 @@ class TreeFactory(gridFactory.GridFactory):
                 numCopiesList.extend([forkCount])
                 radiusList.extend([endR])
             forkCount=2+(i%2)
+        
+        doLeaves=True
+        dotCount=1
+        
                 
         stack = [base]
         
+
+        LODs=list(drawResourcesFactories.keys())
+
+        angleDatas=[]
+        for LODnum,LOD in enumerate(LODs):
+            drawResourcesFactory=drawResourcesFactories[LOD]
+            
+            if LOD==self.minLOD:
+                numVertices=2
+            elif LOD==self.lowLOD:
+                numVertices=3
+            elif LOD==self.midLOD:
+                numVertices=4
+            else:
+                numVertices=6
+            
+            
+            
+            #cache some info needed for placeing the vertexes
+            angleData=[]
+            if self.barkTexture:
+                vNum=numVertices+1
+            else:
+                vNum=numVertices
+            
+            for i in xrange(vNum):  #doubles the last vertex to fix UV seam
+                angle=-2 * i * math.pi / numVertices
+                angleData.append((math.cos(angle),math.sin(angle),1.0*i / numVertices))
         
-        
-        #cache some info needed for placeing the vertexes
-        angleData=[]
-        if self.barkTexture:
-            vNum=numVertices+1
-        else:
-            vNum=numVertices
-        
-        for i in xrange(vNum):  #doubles the last vertex to fix UV seam
-            angle=-2 * i * math.pi / numVertices
-            angleData.append((math.cos(angle),math.sin(angle),1.0*i / numVertices))
+            angleDatas.append(angleData)
         
         bottom=True
         
         while stack: 
-            pos, quat, depth, previousRow, sCoord = stack.pop() 
+            pos, quat, depth, previousRows, sCoord = stack.pop() 
             length = lengthList[depth]
+            sCoord += length/4.0
+            
             radius=radiusList[depth]
             
-            startRow = vertWriter.getWriteRow()
+            
             perp1 = quat.getRight() 
             perp2 = quat.getForward() 
             
-            if radius>cutoffRadius:
-            
+            startRows=[]
+            for LODnum,LOD in enumerate(LODs):
+                drawResourcesFactory=drawResourcesFactories[LOD]
+                previousRow=previousRows[LODnum]
+                angleData=angleDatas[LODnum]
+                vNum=len(angleData)
                 
-                
-                sCoord += length/4.0
-                
-                #this draws the body of the tree. This draws a ring of vertices and connects the rings with 
-                #triangles to form the body. 
-    
-                currAngle = 0 
-                  
-                #vertex information is written here 
-                for cos,sin,tex in angleData:
-                    adjCircle = pos + (perp1 * cos + perp2 * sin) * radius * self.scalar
-                    normal = perp1 * cos + perp2 * sin        
-                    normalWriter.addData3f(normal) 
-                    vertWriter.addData3f(adjCircle) 
-                    if self.barkTexture is not None:
-                        texWriter.addData2f(tex,sCoord) 
-                    else:
-                        colorWriter.addData4f(.4,.3,.3,1)
-                #we cant draw quads directly so we use Tristrips 
-                
-                if bottom: 
-                    bottom=False
+                if LOD==self.minLOD:
+                    cutoffRadius=.7
+                elif LOD==self.lowLOD:
+                    cutoffRadius=.5
+                elif LOD==self.midLOD:
+                    cutoffRadius=.1
                 else:
-                             
-                    for i in xrange(vNum): 
-                        lines.addVertices(i + previousRow,i + startRow)
-                    if not self.barkTexture: lines.addVertices(previousRow,startRow)
-                    lines.closePrimitive()
+                    cutoffRadius=-1
                 
+                trunkResources=drawResourcesFactory.getDrawResources(self.trunkDataIndex[LOD])
+                lines = trunkResources.getGeomTristrips()
+                vertWriter = trunkResources.getWriter("vertex")
+                normalWriter = trunkResources.getWriter("normal")
+                if self.barkTexture:
+                    texWriter = trunkResources.getWriter("texcoord")
+                else:
+                    colorWriter = trunkResources.getWriter("color")
+
+
+                startRow = vertWriter.getWriteRow()
+                startRows.append(startRow)
+                if radius>cutoffRadius:
+                
+                    #this draws the body of the tree. This draws a ring of vertices and connects the rings with 
+                    #triangles to form the body. 
+                      
+                    #vertex information is written here 
+                    for cos,sin,tex in angleData:
+                        adjCircle = pos + (perp1 * cos + perp2 * sin) * radius * self.scalar
+                        normal = perp1 * cos + perp2 * sin        
+                        normalWriter.addData3f(normal) 
+                        vertWriter.addData3f(adjCircle) 
+                        if self.barkTexture is not None:
+                            texWriter.addData2f(tex,sCoord) 
+                        else:
+                            colorWriter.addData4f(.4,.3,.3,1)
+                    #we cant draw quads directly so we use Tristrips 
+                    
+                    if not bottom:
+                        for i in xrange(vNum): 
+                            lines.addVertices(i + previousRow,i + startRow)
+                        if not self.barkTexture: lines.addVertices(previousRow,startRow)
+                        lines.closePrimitive()
+                
+                
+            
+            
+            bottom=False
             if depth + 1 < len(lengthList):
                 #move foward along the right axis 
                 newPos = pos + quat.getUp() * length * self.scalar
@@ -228,15 +230,16 @@ class TreeFactory(gridFactory.GridFactory):
                     for i in xrange(numCopies): 
                         newQuat= _angleRandomAxis(quat, 2 * math.pi * i / numCopies+angleOffset, maxbend)
                         newPos2=pos + newQuat.getUp() * length * self.scalar
-                        stack.append((newPos2,newQuat, depth + 1, startRow, sCoord))
+                        stack.append((newPos2,newQuat, depth + 1, startRows, sCoord))
                 else: 
                     #just make another branch connected to this one with a small variation in direction 
-                    stack.append((newPos, _randomBend(quat, 20), depth + 1, startRow, sCoord))
-            elif doLeaves and (skipLeaves==0 or (random.random()>=skipLeaves)):
+                    stack.append((newPos, _randomBend(quat, 20), depth + 1, startRows, sCoord))
+            elif doLeaves:
                 q=Quat()
                 q.setHpr((random.random()*2*math.pi,0,0))
                 quat=quat*q
                 up=quat.getUp()
+                down=-up
                 
                 # size
                 
@@ -255,39 +258,57 @@ class TreeFactory(gridFactory.GridFactory):
                 norm2=dir1.cross(dir2-bend)
                 norm2.normalize()
                 
-                for x in range(2):
-                    leafRow = leafVertexWriter.getWriteRow()
-                    leafVertexWriter.addData3f(v0)
-                    leafVertexWriter.addData3f(v1)
-                    leafVertexWriter.addData3f(v2)
-                    leafVertexWriter.addData3f(v3)
-                    if self.leafTexture is not None:
-                        n=dotCount
-                        leafTexcoordWriter.addData2f(0,0)
-                        leafTexcoordWriter.addData2f(0,n)
-                        leafTexcoordWriter.addData2f(n,n)
-                        leafTexcoordWriter.addData2f(n,0)
-                    else:
-                        leafColorWriter.addData4f(.5,.4,.0,1)
-                        leafColorWriter.addData4f(.0,.4,.0,1)
-                        leafColorWriter.addData4f(.5,.4,.0,1)
-                        leafColorWriter.addData4f(.0,.4,.0,1)
+                
+                for LOD,drawResourcesFactory in drawResourcesFactories.iteritems():
+                    leafResources=drawResourcesFactory.getDrawResources(self.leafDataIndex[LOD])
+                    leafTri=leafResources.getGeomTriangles()
+            
+                    n1=norm1
+                    n2=norm2
+                    upVec=up
                     
-                    if x==1:
-                        # back sides
-                        up=-up
-                        norm1=-norm1
-                        norm2=-norm2
-                        leafTri.addVertices(leafRow+1,leafRow,leafRow+2)
-                        leafTri.addVertices(leafRow+2,leafRow,leafRow+3)
+                    leafVertexWriter=leafResources.getWriter("vertex")
+                    leafNormalWriter=leafResources.getWriter("normal")
+                    
+                    if self.leafTexture:
+                        leafTexcoordWriter = leafResources.getWriter("texcoord")
                     else:
-                        leafTri.addVertices(leafRow,leafRow+1,leafRow+2)
-                        leafTri.addVertices(leafRow,leafRow+2,leafRow+3)
+                        leafColorWriter = leafResources.getWriter("color")
+                    
+                    
+                    for x in range(2):
+                        leafRow = leafVertexWriter.getWriteRow()
+                        leafVertexWriter.addData3f(v0)
+                        leafVertexWriter.addData3f(v1)
+                        leafVertexWriter.addData3f(v2)
+                        leafVertexWriter.addData3f(v3)
+                        if self.leafTexture is not None:
+                            n=dotCount
+                            leafTexcoordWriter.addData2f(0,0)
+                            leafTexcoordWriter.addData2f(0,n)
+                            leafTexcoordWriter.addData2f(n,n)
+                            leafTexcoordWriter.addData2f(n,0)
+                        else:
+                            leafColorWriter.addData4f(.5,.4,.0,1)
+                            leafColorWriter.addData4f(.0,.4,.0,1)
+                            leafColorWriter.addData4f(.5,.4,.0,1)
+                            leafColorWriter.addData4f(.0,.4,.0,1)
                         
-                    leafNormalWriter.addData3f(up)
-                    leafNormalWriter.addData3f(norm1) 
-                    leafNormalWriter.addData3f(up) 
-                    leafNormalWriter.addData3f(norm2)
+                        if x==1:
+                            # back sides
+                            upVec=-up
+                            n1=-norm1
+                            n2=-norm2
+                            leafTri.addVertices(leafRow+1,leafRow,leafRow+2)
+                            leafTri.addVertices(leafRow+2,leafRow,leafRow+3)
+                        else:
+                            leafTri.addVertices(leafRow,leafRow+1,leafRow+2)
+                            leafTri.addVertices(leafRow,leafRow+2,leafRow+3)
+                            
+                        leafNormalWriter.addData3f(upVec)
+                        leafNormalWriter.addData3f(n1) 
+                        leafNormalWriter.addData3f(upVec) 
+                        leafNormalWriter.addData3f(n2)
 
 #this is for making the tree not too straight 
 def _randomBend(inQuat, maxAngle=20):

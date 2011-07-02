@@ -38,7 +38,7 @@ class FernFactory(gridFactory.GridFactory):
         
         self.leafDataIndex[LOD]=collection.add(leafRequirements)
         
-    def drawItem(self,LOD,x,y,drawResourcesFactory,tile,tileCenter,seed=True):
+    def drawItem(self,LOD,x,y,drawResourcesFactory,tile,tileCenter,collision,seed=True):
         if seed: random.seed((x,y))
         exists=random.random()
         if exists<.6: return
