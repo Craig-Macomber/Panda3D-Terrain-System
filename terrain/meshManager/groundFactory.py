@@ -145,27 +145,3 @@ class GroundFactory(meshManager.MeshFactory):
         terrain.generate()
         
         resources.attachNode(root)
-        
-        tile.terrain=terrain
-        
-        def height(x,y):
-            t=self
-            xDif=x-tile.bakedTile.x
-            if xDif>=0 and xDif<=tile.tileScale:
-                yDif=y-tile.bakedTile.y
-                if yDif>=0 and yDif<=tile.tileScale:
-        
-                    # found correct tile
-                    h=terrain.heightfield()
-                    mapSize=h.getXSize()
-                    s=(mapSize-1)/tile.tileScale
-                    xLoc=min(mapSize,max(0,xDif*s))
-                    yLoc=min(mapSize,max(0,yDif*s))
-                    
-                    return terrain.getElevation(xLoc,yLoc)*self.heightScale
-
-            print "Find height Failed"
-            return 0.0
-
-        
-        #tile.height=height
