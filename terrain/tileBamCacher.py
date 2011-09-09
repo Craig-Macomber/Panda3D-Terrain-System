@@ -25,6 +25,17 @@ dataFile="data.txt"
 def exportTile(dstDir,name,tile):
     tile.writeBamFile(os.path.join(dstDir,name+".bam"))
 
+def makeImportWrapper(call):
+    def wrapper(srcDir,name,callback=None):
+        def done(model):
+            callback(call(RenderTile(model)))
+        path=os.path.join(srcDir,name+".bam")
+        if callback:
+            loader.loadModel(path,callback=done)
+        else:
+            return call(RenderTile(loader.loadModel(path)))
+    return wrapper
+    
 def importTile(srcDir,name,callback=None):
     def done(model):
         callback(RenderTile(model))

@@ -1,17 +1,17 @@
 import math, random
 
-from panda3d.core import Vec3, Quat, GeomVertexFormat
-
-from panda3d.core import *
+from panda3d.core import Vec3, Quat, GeomVertexFormat, TextureStage, GeoMipTerrain, PNMImage
 
 from terrain.bakery.bakery import Tile, parseFile, loadTex
+
+from terrain import collisionUtil
 
 import meshManager
 
 
 class GroundFactory(meshManager.MeshFactory):
     
-    def __init__(self,path,heightScale,shader=None):
+    def __init__(self,path,heightScale,shader=None,skipTextures=False):
         self.shader=shader
         meshManager.MeshFactory.__init__(self)
     
@@ -22,59 +22,65 @@ class GroundFactory(meshManager.MeshFactory):
         self.heightScale=heightScale
         
         d=parseFile(path+'/texList.txt')
-        
+            
         self.mapTexStages={}
         self.specialMaps={}
         for m in d['Special']:
             s=m.split('\t')
             self.specialMaps[s[1]]=s[0]
         
-        
         # List of non map texture stages, and their sizes
         # (TexStage,Size)
         self.texList=[]
         
-        if "Tex2D" in d:
-            sort=0;
-            for m in d["Tex2D"]:
-                sort+=1
-                s=m.split()
-                name=s[0]
-                texStage=TextureStage(name+'stage'+str(sort))
-                texStage.setSort(sort)
-                source=s[1]
-                
-#                 def setTexModes(modeText):
-#                     combineMode=[]
-#                     for t in modeText:
-#                         if t[:1]=='M':
-#                             texStage.setMode(getRenderMapType(t))
-#                         elif t[:1]=='C':
-#                             combineMode.append(getCombineMode(t))
-#                         elif t=='Save':
-#                             texStage.setSavedResult(True)
-#                         else:
-#                             print "Illegal mode info for "+name
-#                     if len(combineMode)>0:
-#                         texStage.setCombineRgb(*combineMode)
-#                     if len(modeText)==0:
-#                         texStage.setMode(TextureStage.MModulate)
-                
-                if source=='file':
+        if not skipTextures:
+            
+            
+            
+            
+            
+            
+            if "Tex2D" in d:
+                sort=0;
+                for m in d["Tex2D"]:
+                    sort+=1
+                    s=m.split()
+                    name=s[0]
+                    texStage=TextureStage(name+'stage'+str(sort))
+                    texStage.setSort(sort)
+                    source=s[1]
                     
-#                     setTexModes(s[3:])
-                    tex=loadTex(path+"/textures/"+name)
-#                     self.terrainNode.setTexture(texStage,tex)
-#                     self.terrainNode.setShaderInput('tex2D_'+name,tex)
-                    self.texList.append((texStage,float(s[2]),tex,name))
+    #                 def setTexModes(modeText):
+    #                     combineMode=[]
+    #                     for t in modeText:
+    #                         if t[:1]=='M':
+    #                             texStage.setMode(getRenderMapType(t))
+    #                         elif t[:1]=='C':
+    #                             combineMode.append(getCombineMode(t))
+    #                         elif t=='Save':
+    #                             texStage.setSavedResult(True)
+    #                         else:
+    #                             print "Illegal mode info for "+name
+    #                     if len(combineMode)>0:
+    #                         texStage.setCombineRgb(*combineMode)
+    #                     if len(modeText)==0:
+    #                         texStage.setMode(TextureStage.MModulate)
                     
-                elif source=='map':
-#                     setTexModes(s[2:])
-                    self.mapTexStages[s[0]]=texStage
-# 
-#                 else:
-#                     print 'Invalid source for '+name+' int Tex2D'
-        
+                    if source=='file':
+                        
+    #                     setTexModes(s[3:])
+                        tex=loadTex(path+"/textures/"+name)
+    #                     self.terrainNode.setTexture(texStage,tex)
+    #                     self.terrainNode.setShaderInput('tex2D_'+name,tex)
+                        self.texList.append((texStage,float(s[2]),tex,name))
+                        
+                    elif source=='map':
+    #                     setTexModes(s[2:])
+                        self.mapTexStages[s[0]]=texStage
+    # 
+    #                 else:
+    #                     print 'Invalid source for '+name+' int Tex2D'
+            
         
         self.LOD=meshManager.LOD(float('inf'),0)
     
@@ -91,7 +97,7 @@ class GroundFactory(meshManager.MeshFactory):
         
         self.dataIndex[LOD]=collection.add(requirements)
     
-    def draw(self,drawResourcesFactories,x,y,x1,y1,tileCenter,collision):
+    def makeBlock(self,drawResourcesFactories,x,y,x1,y1,tileCenter,collision):
         drawResourcesFactory=drawResourcesFactories[self.LOD]
         tile=drawResourcesFactory.getTile()
         resources=drawResourcesFactory.getDrawResources(self.dataIndex[self.LOD])
@@ -110,6 +116,7 @@ class GroundFactory(meshManager.MeshFactory):
         terrain.setBruteforce(True)
         # Store the root NodePath for convenience
         root = terrain.getRoot()
+        
         root.setPos(tile.bakedTile.x-tileCenter.getX(),tile.bakedTile.y-tileCenter.getY(),0)
         
         for t in self.texList:
@@ -144,4 +151,15 @@ class GroundFactory(meshManager.MeshFactory):
         # Generate it.
         terrain.generate()
         
-        resources.attachNode(root)
+        root.flattenLight()
+        if collision:
+            col=collisionUtil.rebuildGeomNodesToColPolys(root)
+            col.setCollideMask(collisionUtil.groundMask)
+            col.reparentTo(collision)
+        
+        return root
+    
+    def draw(self,drawResourcesFactories,x,y,x1,y1,tileCenter,collision):
+        drawResourcesFactory=drawResourcesFactories[self.LOD]
+        resources=drawResourcesFactory.getDrawResources(self.dataIndex[self.LOD])
+        resources.attachNode(self.makeBlock(drawResourcesFactories,x,y,x1,y1,tileCenter,collision))

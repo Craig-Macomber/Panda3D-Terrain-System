@@ -1,9 +1,10 @@
 import math, random
 
-from panda3d.core import Vec3, Quat, GeomVertexFormat, NodePath
+from panda3d.core import Vec3, Point3, Quat, GeomVertexFormat, NodePath, CollisionNode, CollisionTube
 
 import meshManager
 import gridFactory
+from terrain import collisionUtil
 
 
 class TreeFactory(gridFactory.GridFactory2):
@@ -77,9 +78,9 @@ class TreeFactory(gridFactory.GridFactory2):
         heightOffset=-0.4 # make sure whole bottom of tree is in ground
         pos=Vec3(x,y,tile.height(x,y)+heightOffset)-tileCenter
         
-        self.drawTree((pos, quat, 0, list(0 for x in drawResourcesFactories.iterkeys()), 0),drawResourcesFactories)
+        self.drawTree((pos, quat, 0, list(0 for x in drawResourcesFactories.iterkeys()), 0),drawResourcesFactories,collision)
                
-    def drawTree(self,base,drawResourcesFactories):
+    def drawTree(self,base,drawResourcesFactories,collision):
         age=random.random()**3.5
         to = 12*age
         if to<3: return
@@ -96,6 +97,9 @@ class TreeFactory(gridFactory.GridFactory2):
         radiusList=[]
         currR=age*1.0*(random.random()*2+1)
         forkCount=0
+        
+        lengthScale=2.0
+        
         for i in xrange(forks+1):
             currR*=1/math.sqrt(2)
             endR=currR*.9*.9
@@ -103,11 +107,11 @@ class TreeFactory(gridFactory.GridFactory2):
                 endR=0
                 forkCount=0
             if i<2:
-                lengthList.extend([2.0,2.0,2.0])
+                lengthList.extend([lengthScale,lengthScale,lengthScale])
                 numCopiesList.extend([forkCount,0,0])
                 radiusList.extend([currR,currR*.9,endR])
             else:
-                lengthList.extend([6.0])
+                lengthList.extend([lengthScale*3])
                 numCopiesList.extend([forkCount])
                 radiusList.extend([endR])
             forkCount=2+(i%2)
@@ -151,12 +155,21 @@ class TreeFactory(gridFactory.GridFactory2):
         
         bottom=True
         
+        if collision:
+            cNode=CollisionNode('cnode')
+            cnodePath = NodePath(cNode)
+            cnodePath.reparentTo(collision)
+            cnodePath.setCollideMask(collisionUtil.groundMask)
+            #cnodePath.show()
+            
+        
         while stack: 
             pos, quat, depth, previousRows, sCoord = stack.pop() 
             length = lengthList[depth]
             sCoord += length/4.0
             
             radius=radiusList[depth]
+            
             
             
             perp1 = quat.getRight() 
@@ -184,8 +197,8 @@ class TreeFactory(gridFactory.GridFactory2):
                 normalWriter = trunkResources.getWriter("normal")
                 if self.barkTexture:
                     texWriter = trunkResources.getWriter("texcoord")
-                else:
-                    colorWriter = trunkResources.getWriter("color")
+#                 else:
+#                     colorWriter = trunkResources.getWriter("color")
 
 
                 startRow = vertWriter.getWriteRow()
@@ -203,8 +216,8 @@ class TreeFactory(gridFactory.GridFactory2):
                         vertWriter.addData3f(adjCircle) 
                         if self.barkTexture is not None:
                             texWriter.addData2f(tex,sCoord) 
-                        else:
-                            colorWriter.addData4f(.4,.3,.3,1)
+#                         else:
+#                             colorWriter.addData4f(.4,.3,.3,1)
                     #we cant draw quads directly so we use Tristrips 
                     
                     if not bottom:
@@ -218,7 +231,7 @@ class TreeFactory(gridFactory.GridFactory2):
             
             bottom=False
             if depth + 1 < len(lengthList):
-                #move foward along the right axis 
+                #move foward along the correct axis 
                 newPos = pos + quat.getUp() * length * self.scalar
 #                if makeColl: 
 #                    self.makeColl(pos, newPos, radiusList[depth]) 
@@ -231,9 +244,17 @@ class TreeFactory(gridFactory.GridFactory2):
                         newQuat= _angleRandomAxis(quat, 2 * math.pi * i / numCopies+angleOffset, maxbend)
                         newPos2=pos + newQuat.getUp() * length * self.scalar
                         stack.append((newPos2,newQuat, depth + 1, startRows, sCoord))
+                        
+                        if collision:
+                            tube = CollisionTube(Point3(pos),Point3(newPos2),radius*2)
+                            cNode.addSolid(tube)
+                
                 else: 
                     #just make another branch connected to this one with a small variation in direction 
                     stack.append((newPos, _randomBend(quat, 20), depth + 1, startRows, sCoord))
+                    if collision:
+                        tube = CollisionTube(Point3(pos),Point3(newPos),radius*2)
+                        cNode.addSolid(tube)
             elif doLeaves:
                 q=Quat()
                 q.setHpr((random.random()*2*math.pi,0,0))

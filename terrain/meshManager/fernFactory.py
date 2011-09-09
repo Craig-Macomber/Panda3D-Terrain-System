@@ -68,8 +68,8 @@ class FernFactory(gridFactory.GridFactory):
         
         if self.leafTexture:
             texcoordWriter = leafResources.getWriter("texcoord")
-        else:
-            colorWriter = leafResources.getWriter("color")
+#         else:
+#             colorWriter = leafResources.getWriter("color")
         
         
         
@@ -109,11 +109,11 @@ class FernFactory(gridFactory.GridFactory):
                     texcoordWriter.addData2f(0,1)
                     texcoordWriter.addData2f(1,0)
                     texcoordWriter.addData2f(1,1)
-                else:
-                    colorWriter.addData4f(.1,.3,.1,1)
-                    colorWriter.addData4f(.1,.3,.1,1)
-                    colorWriter.addData4f(.1,.3,.1,1)
-                    colorWriter.addData4f(.1,.3,.1,1)
+#                 else: 
+#                     colorWriter.addData4f(.1,.3,.1,1)
+#                     colorWriter.addData4f(.1,.3,.1,1)
+#                     colorWriter.addData4f(.1,.3,.1,1)
+#                     colorWriter.addData4f(.1,.3,.1,1)
             
                 if x==1:
                     # back sides
