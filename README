@@ -1,7 +1,11 @@
 Instructions:
 
-To run a sample, navigate to the repository root directory, and run one of the samples from there
-example: python samples/infiniteRalph/main.py
+Use this repo as a package in your project named terrain, ex:
+git submodule add git://github.com/Craig-Macomber/Panda3D-Terrain-System.git terrain
+
+a sample using this library can be found here:
+https://github.com/Craig-Macomber/infiniteRalph
+
 
 Terrain Bakery:
 
