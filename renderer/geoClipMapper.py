@@ -42,7 +42,7 @@ class GeoClipMapper(RenderNode):
         self.terrainNode.setScale(scale,scale,scale)
         self.shaderHeightScale=self.heightScale/scale
         self.terrainNode.setShaderInput("heightScale",self.shaderHeightScale,0,0)
-        self.terrainNode.setShader(loader.loadShader("geoClip.sha"))
+        self.terrainNode.setShader(loader.loadShader("terrain/geoClip.sha"))
         
         def makeGrid(xSize,ySize):
             """ Size is in verts, not squares """
@@ -174,7 +174,7 @@ class GeoClipMapper(RenderNode):
         
         
         self.grass=self.setUpGrass(center,n)
-        grassTex = loadTex("grassSheet",True)
+        grassTex = loadTex("terrain/grassSheet",True)
         self.grass.setShaderInput("grassSheet",grassTex)
         grassTex.setWrapU(Texture.WMClamp)
         grassTex.setWrapV(Texture.WMClamp)
@@ -194,7 +194,7 @@ class GeoClipMapper(RenderNode):
         grass=NodePath(snode)
         grass.reparentTo(node)
         grass.setAttrib(CullFaceAttrib.make(CullFaceAttrib.MCullNone))
-        grass.setShader(loader.loadShader("geoClipGrass.sha"))
+        grass.setShader(loader.loadShader("terrain/geoClipGrass.sha"))
         
         cullmargin=3
         
@@ -307,7 +307,7 @@ class _GeoClipLevel(NodePath):
         self.level=level
         self.geoClipMapper=geoClipMapper
         
-        self.heightTex=loadTex("renderData/textures/grass") # some texture as place holder before map is made.
+        self.heightTex=Texture()#loadTex("renderData/textures/grass") # some texture as place holder before map is made.
         self.setShaderInput("height",self.heightTex)
         
         scale=2**(level)
