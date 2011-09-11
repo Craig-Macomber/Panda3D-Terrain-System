@@ -1,8 +1,0 @@
-:Special
-# MapName   SpecialUse
-height	height
-grassData	grassData
-grassData2	grassData2
-
-:Tex2D
-grass	file	50.0	MReplace

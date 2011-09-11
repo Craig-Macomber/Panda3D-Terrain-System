@@ -1,9 +1,0 @@
-:Input
-city
-
-:Tex2D
-city
-
-:Shader
-
-return float4(tex2D(tex2D_city,pos*150).xyz,map_city.x);

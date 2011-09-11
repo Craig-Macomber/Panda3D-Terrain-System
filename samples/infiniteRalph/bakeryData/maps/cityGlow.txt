@@ -1,5 +1,0 @@
-:Input
-city
-
-:Shader
-return float4(0,0,0,map_city.x);

@@ -1,4 +1,0 @@
-:Special
-height	height
-:Tex2D
-grass	file	50.0	MModulate
