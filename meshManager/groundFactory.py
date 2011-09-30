@@ -107,7 +107,8 @@ class GroundFactory(meshManager.MeshFactory):
         heightTex=tile.bakedTile.renderMaps[self.specialMaps["height"]].tex
         heightTexSize=heightTex.getXSize()
         pnmImage=PNMImage()
-        # heightTex.makeRamImage () # Makes it run without having ran image in advance, but it all ends up flat.
+        #heightTex.makeRamImage() # Makes it run without having ran image in advance, but it all ends up flat.
+        
         heightTex.store(pnmImage)
         terrain.setHeightfield(pnmImage)
         
@@ -128,7 +129,6 @@ class GroundFactory(meshManager.MeshFactory):
         
         for t in self.mapTexStages:
             tex=tile.bakedTile.renderMaps[t].tex
-            
             
             root.setTexture(self.mapTexStages[t],tex)
             
@@ -151,9 +151,10 @@ class GroundFactory(meshManager.MeshFactory):
         # Generate it.
         terrain.generate()
         
-        root.flattenLight()
+        
+        #root.flattenLight()
         if collision:
-            col=collisionUtil.rebuildGeomNodesToColPolys(root)
+            col=collisionUtil.rebuildGeomNodesToColPolys(root,collision)
             col.setCollideMask(collisionUtil.groundMask)
             col.reparentTo(collision)
         

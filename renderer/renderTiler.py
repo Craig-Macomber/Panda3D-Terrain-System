@@ -128,7 +128,7 @@ class RenderTile(NodePath):
         
         if peeker is None:
             print "Error: sampleMap "+mapName+" failed"
-            return 0
+            return Vec4()
         
         tx=(x-self.bakedTile.x)/self.tileScale
         ty=(y-self.bakedTile.y)/self.tileScale

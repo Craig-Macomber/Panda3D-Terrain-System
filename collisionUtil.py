@@ -4,14 +4,20 @@ groundMask=BitMask32(0b1)
 
 
 # from FenrirWolf via http://www.panda3d.org/forums/viewtopic.php?p=43705&sid=d5588e66bcedd9f7c7f51a3226ad890c
-def rebuildGeomNodesToColPolys (incomingNode): 
+# modified my Craig Macomber
+def rebuildGeomNodesToColPolys (incomingNode,relativeTo=None): 
     ''' 
     Converts GeomNodes into CollisionPolys in a straight 1-to-1 conversion 
 
     Returns a new NodePath containing the CollisionNodes 
     ''' 
+    
     parent = NodePath('cGeomConversionParent') 
     for c in incomingNode.findAllMatches('**/+GeomNode'): 
+        if relativeTo:
+            xform=c.getMat(relativeTo).xformPoint
+        else:
+            xform=c.getMat().xformPoint
         gni = 0 
         geomNode = c.node() 
         for g in range(geomNode.getNumGeoms()): 
@@ -29,7 +35,7 @@ def rebuildGeomNodesToColPolys (incomingNode):
                     v = [] 
                     for vi in range (s, e): 
                         vreader.setRow(prim.getVertex(vi)) 
-                        v.append (vreader.getData3f()) 
+                        v.append (xform(vreader.getData3f())) 
                     colPoly = CollisionPolygon(*v) 
                     cChild.addSolid(colPoly) 
 

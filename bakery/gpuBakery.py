@@ -31,7 +31,7 @@ void vshader(
 float3 packFloat(float h){
 int3 hv=int3(clamp(h,0,1)*float3(256,256*256,256*256*256));
 hv.yz%=256;
-return float3(hv)/256;
+return float3(hv)/255;
 }
 
 float unpackFloat(float3 h){

@@ -130,6 +130,7 @@ class Bammer:
         
     def processGrid(self,startX,startY,xCount,yCount):
         for x in xrange(xCount):
+            print "starting row {0} of {1}".format(x+1,xCount)
             for y in xrange(yCount):
                 self.processTile(startX+x,startY+y)
     

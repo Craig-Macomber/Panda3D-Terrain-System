@@ -38,18 +38,18 @@ class FernFactory(gridFactory.GridFactory):
         
         self.leafDataIndex[LOD]=collection.add(leafRequirements)
         
-    def drawItem(self,LOD,x,y,drawResourcesFactory,tile,tileCenter,collision,seed=True):
+    def drawItem(self,LOD,x,y,drawResourcesFactory,tile,tileCenter,collision,seed=True,scale=1.0):
         if seed: random.seed((x,y))
         exists=random.random()
         if exists<.6: return
         quat=Quat()
         
         pos=Vec3(x,y,tile.height(x,y))-tileCenter
-        self.drawFern(LOD,pos, quat,drawResourcesFactory)    
+        self.drawFern(LOD,pos, quat,drawResourcesFactory,scale=scale)    
     
-    def drawFern(self,LOD,pos,quat,drawResourcesFactory):
+    def drawFern(self,LOD,pos,quat,drawResourcesFactory,scale=1.0):
         scalar=random.random()
-        scale=scalar
+        scale*=scalar
         
         if scale<.3: return
         

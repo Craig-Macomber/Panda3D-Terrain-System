@@ -63,7 +63,7 @@ class TreeFactory(gridFactory.GridFactory2):
         self.trunkDataIndex[LOD]=collection.add(trunkRequirements)
         self.leafDataIndex[LOD]=collection.add(leafRequirements)
     
-    def drawItem(self,drawResourcesFactories,x,y,tileCenter,collision,seed=True):
+    def drawItem(self,drawResourcesFactories,x,y,tileCenter,collision,seed=True,scale=1.0):
         v=drawResourcesFactories.values()
         if len(v)<1: return
         tile=v[0].getTile()
@@ -78,15 +78,15 @@ class TreeFactory(gridFactory.GridFactory2):
         heightOffset=-0.4 # make sure whole bottom of tree is in ground
         pos=Vec3(x,y,tile.height(x,y)+heightOffset)-tileCenter
         
-        self.drawTree((pos, quat, 0, list(0 for x in drawResourcesFactories.iterkeys()), 0),drawResourcesFactories,collision)
+        self.drawTree((pos, quat, 0, list(0 for x in drawResourcesFactories.iterkeys()), 0),drawResourcesFactories,collision,scale=scale)
                
-    def drawTree(self,base,drawResourcesFactories,collision):
+    def drawTree(self,base,drawResourcesFactories,collision,scale=1.0):
         age=random.random()**3.5
         to = 12*age
         if to<3: return
         
         leafScaler=age**.5
-        leafSize=10.0*self.scalar*leafScaler
+        leafSize=10.0*self.scalar*leafScaler*scale
         
         
         maxbend=40+random.random()*20
@@ -98,7 +98,7 @@ class TreeFactory(gridFactory.GridFactory2):
         currR=age*1.0*(random.random()*2+1)
         forkCount=0
         
-        lengthScale=2.0
+        lengthScale=2.0*scale
         
         for i in xrange(forks+1):
             currR*=1/math.sqrt(2)
@@ -246,14 +246,14 @@ class TreeFactory(gridFactory.GridFactory2):
                         stack.append((newPos2,newQuat, depth + 1, startRows, sCoord))
                         
                         if collision:
-                            tube = CollisionTube(Point3(pos),Point3(newPos2),radius*2)
+                            tube = CollisionTube(Point3(pos),Point3(newPos2),radius)
                             cNode.addSolid(tube)
                 
                 else: 
                     #just make another branch connected to this one with a small variation in direction 
                     stack.append((newPos, _randomBend(quat, 20), depth + 1, startRows, sCoord))
                     if collision:
-                        tube = CollisionTube(Point3(pos),Point3(newPos),radius*2)
+                        tube = CollisionTube(Point3(pos),Point3(newPos),radius)
                         cNode.addSolid(tube)
             elif doLeaves:
                 q=Quat()
