@@ -16,7 +16,7 @@ class TreeFactory(gridFactory.GridFactory2):
         self.leafDataIndex={}
         self.trunkDataIndex={}
         
-        self.minLOD=meshManager.LOD('inf',2000)
+        self.minLOD=meshManager.LOD(float('inf'),2000)
         self.lowLOD=meshManager.LOD(2000,1000)
         self.midLOD=meshManager.LOD(1000,500)
         self.highLOD=meshManager.LOD(500,0)
@@ -25,20 +25,21 @@ class TreeFactory(gridFactory.GridFactory2):
         return [self.minLOD,self.lowLOD,self.midLOD,self.highLOD]
         
     def regesterGeomRequirements(self,LOD,collection):
-        
+                
         n=NodePath('tmp')
         
         if self.barkTexture is not None:
             n.setTexture(self.barkTexture)
             n.setShaderInput('diffTex',self.barkTexture)
-        
-            trunkRequirements=meshManager.GeomRequirements(
-                geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-                renderState=n.getState()
-                )
+            format=GeomVertexFormat.getV3n3t2()
         else:
-            trunkRequirements=meshManager.GeomRequirements(
-                geomVertexFormat=GeomVertexFormat.getV3n3c4(),
+            format=GeomVertexFormat.getV3n3()
+            n.setColor(.4,.3,.3,1)
+        
+        #n.setShader(customLoader.makeShader(n))
+        
+        trunkRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=format,
                 renderState=n.getState()
                 )
         
@@ -46,17 +47,18 @@ class TreeFactory(gridFactory.GridFactory2):
         n=NodePath('tmp')
         
         if self.leafTexture is not None:
+            #n.setTag("alpha","")
+            n.setShaderInput("alpha",0,0,0) # marker we need cutout alpha
             n.setTexture(self.leafTexture)
             n.setShaderInput('diffTex',self.leafTexture)
-            
-            leafRequirements=meshManager.GeomRequirements(
-                geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-                renderState=n.getState()
-                )
-        
+            format=GeomVertexFormat.getV3n3t2()
         else:
-            leafRequirements=meshManager.GeomRequirements(
-                geomVertexFormat=GeomVertexFormat.getV3n3c4(),
+            format=GeomVertexFormat.getV3n3c4()
+        
+        #n.setShader(customLoader.makeShader(n,debugCodePrefix="tree",debugGraphPrefix="tree"))
+        
+        leafRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=format,
                 renderState=n.getState()
                 )
         

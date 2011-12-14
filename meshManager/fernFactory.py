@@ -26,15 +26,17 @@ class FernFactory(gridFactory.GridFactory):
         if self.leafTexture is not None:
             n.setTexture(self.leafTexture)
             n.setShaderInput('diffTex',self.leafTexture)
-            leafRequirements=meshManager.GeomRequirements(
-                geomVertexFormat=GeomVertexFormat.getV3n3t2(),
-                renderState=n.getState()
-                )
+            format=GeomVertexFormat.getV3n3t2()
         else:
-            leafRequirements=meshManager.GeomRequirements(
-                geomVertexFormat=GeomVertexFormat.getV3n3c4(),
-                )
+            n.setColor(.1,.3,.1,1)
+            format=GeomVertexFormat.getV3n3c4()
+
+        #n.setShader(customLoader.makeShader(n,debugCodePrefix="fern",debugGraphPrefix="fern"))
         
+        leafRequirements=meshManager.GeomRequirements(
+                geomVertexFormat=GeomVertexFormat.getV3n3(),
+                renderState=n.getState(),
+                )
         
         self.leafDataIndex[LOD]=collection.add(leafRequirements)
         

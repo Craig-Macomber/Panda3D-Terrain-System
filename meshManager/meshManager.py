@@ -227,7 +227,7 @@ class MeshManager(NodePath):
             for l in levels: l.finishTile()
             
             lodNodePath.setPos(tileCenter)
-            collisionNode.setPos(tileCenter)
+            if collision: collisionNode.setPos(tileCenter)
             for lod,levs in LODAndLevelList:
                 holder=NodePath("holder")
                 # instance regular meshes 

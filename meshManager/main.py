@@ -1,3 +1,16 @@
+# A simple demo of the mesh manager.
+# Generates and renders a single tile with some ferns and trees
+#
+# INSTRUCTIONS:
+#
+# Launch from outside terrain, meaning launch with:
+# python terrain/meshManager/main.py
+
+import sys
+sys.path.append(".")
+
+from panda3d.core import *
+
 from panda3d.core import Light,AmbientLight,DirectionalLight
 from panda3d.core import NodePath
 from panda3d.core import Vec3,Vec4,Mat4,VBase4,Point3
@@ -5,40 +18,37 @@ from direct.task.Task import Task
 
 from direct.showbase.ShowBase import ShowBase 
 
-import meshManager
-import treeFactory
-import fernFactory
+from terrain.meshManager import meshManager
+from terrain.meshManager import treeFactory
+from terrain.meshManager import fernFactory
 
 base = ShowBase() 
 base.disableMouse()
-#base.cam.setPos(0, -80, 10) 
 
 class Flat():
     def height(self,x,y): return 0
 
-f=Flat()
-factories=[treeFactory.TreeFactory(f),fernFactory.FernFactory(f)]
+factories=[treeFactory.TreeFactory(),fernFactory.FernFactory()]
 t=meshManager.MeshManager(factories)
 
 
+tf=treeFactory.TreeFactory()
+ff=fernFactory.FernFactory()
+
+factories=[tf,ff]
+
+meshManager=meshManager.MeshManager(factories)
+
+size=600.0
+
+tileFactory=meshManager.tileFactory(size)
+x=0.0
+y=0.0
+tile=Flat()
+tileNode=tileFactory(x,y,tile)
 
 
-t.reparentTo(base.render) 
-
-#make an optimized snapshot of the current tree 
-# np = t.getStatic() 
-# np.setPos(10, 10, 0) 
-# np.reparentTo(base.render) 
-
-import time
-tt=time.time()
-
-p=40
-#t.addBlock(0,-p,-p,p,p)
-
-#for x in range(11): t.grow()
-print (time.time()-tt)
-
+tileNode.reparentTo(base.render) 
 
 
 dlight = DirectionalLight('dlight')
@@ -54,14 +64,14 @@ render.setLight(alnp)
 
 #rotating light to show that normals are calculated correctly
 def updateLight(task):
-    base.camera.setHpr(task.time/200.0*360,0,0)
+    base.camera.setHpr(task.time/50.0*360,0,0)
     
     #base.camera.setP(0)
-    #base.camera.setPos(0,0,0)
-    base.camera.setPos(t,2,task.time*4,5)
+    base.camera.setPos(size/2,size/2,5)
+    #base.camera.setPos(tileNode,2,task.time*4,5)
     base.camera.setP(8)
     
-    t.update(base.camera)
+    #t.update(base.camera)
     
     h=task.time/20.0*360+180
     
