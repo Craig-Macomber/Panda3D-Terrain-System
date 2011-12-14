@@ -29,12 +29,12 @@ class FernFactory(gridFactory.GridFactory):
             format=GeomVertexFormat.getV3n3t2()
         else:
             n.setColor(.1,.3,.1,1)
-            format=GeomVertexFormat.getV3n3c4()
+            format=GeomVertexFormat.getV3n3()
 
         #n.setShader(customLoader.makeShader(n,debugCodePrefix="fern",debugGraphPrefix="fern"))
         
         leafRequirements=meshManager.GeomRequirements(
-                geomVertexFormat=GeomVertexFormat.getV3n3(),
+                geomVertexFormat=format,
                 renderState=n.getState(),
                 )
         
@@ -70,8 +70,6 @@ class FernFactory(gridFactory.GridFactory):
         
         if self.leafTexture:
             texcoordWriter = leafResources.getWriter("texcoord")
-#         else:
-#             colorWriter = leafResources.getWriter("color")
         
         
         
@@ -111,11 +109,6 @@ class FernFactory(gridFactory.GridFactory):
                     texcoordWriter.addData2f(0,1)
                     texcoordWriter.addData2f(1,0)
                     texcoordWriter.addData2f(1,1)
-#                 else: 
-#                     colorWriter.addData4f(.1,.3,.1,1)
-#                     colorWriter.addData4f(.1,.3,.1,1)
-#                     colorWriter.addData4f(.1,.3,.1,1)
-#                     colorWriter.addData4f(.1,.3,.1,1)
             
                 if x==1:
                     # back sides
