@@ -41,7 +41,32 @@ class FixedBakery:
         raise NotImplementedError()
         #callback(self.getTile(x, y),*callbackParams)
         
+
+
+
+class Wrapped(FixedBakery):
+    """
+    wraps a FixedBakery and rus function on the tiles passing through
+    
+    intended for pipelining tile modifications for tile creation
+    """
+    def __init__(self,bakery,processTile=None):
+        self.bakery=bakery
+        if processTile: self.processTile=processTile
+
+    def hasTile(self, *args, **kargs):
+        return self.bakery.hasTile(*args,**kargs)
         
+    def getTile(self, *args, **kargs):
+        return self.processTile(self.bakery.getTile(*args, **kargs))
+    
+    def asyncGetTile(self, x, y, callback, callbackParams=()):
+        self.bakery.asyncGetTile(x, y, self._asyncTileDone, (callback,callbackParams))
+    
+    def _asyncTileDone(self,tile,callback,callbackParams):
+        callback(self.processTile(tile),*callbackParams)
+
+
 class FixWrapped(FixedBakery):
     """
     a wrapper to use a Bakery as a FixedBakery

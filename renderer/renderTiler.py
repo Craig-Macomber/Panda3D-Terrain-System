@@ -9,7 +9,7 @@ from direct.task.Task import Task
 
 from terrain import tileUtil
 
-from terrain.bakery.bakery import FixedBakery,FixWrapped
+from terrain.bakery.bakery import Wrapped,FixWrapped
 
 
 class RenderNodeTiler(NodePath):
@@ -44,24 +44,17 @@ class RenderNodeTiler(NodePath):
 
 
 
-class RenderTileBakery(FixedBakery):
+class RenderTileBakery(Wrapped):
     """
     A class the wraps a bakery to produce RenderTiles instead of baked tiles
     """
     def __init__(self,bakery,tileSize,meshManager,heightScale):
-        self.bakery=FixWrapped(bakery,tileSize)
-        self.hasTile=bakery.hasTile
-        self.makeTile=meshManager.tileFactory(tileSize,collision=True)#maxDistance=float('inf'),minDistance=0,collision=False)
+        self.makeTile=meshManager.tileFactory(tileSize,collision=True)
         self.heightScale=heightScale
+        Wrapped.__init__(self,FixWrapped(bakery,tileSize))
         
-    def getTile(self, x, y):
-        return RenderTile(self.bakery.getTile(x, y),self.makeTile,self.heightScale)
-    
-    def asyncGetTile(self, x, y, callback, callbackParams=()):
-        self.bakery.asyncGetTile(x, y, self._asyncTileDone, (callback,callbackParams))
-        
-    def _asyncTileDone(self,tile,callback,callbackParams):
-        callback(RenderTile(tile,self.makeTile,self.heightScale),*callbackParams)
+    def processTile(self,tile):
+        return RenderTile(tile,self.makeTile,self.heightScale)
 
 class RenderTile(NodePath):
     """
