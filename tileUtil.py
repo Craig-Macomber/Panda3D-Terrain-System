@@ -219,38 +219,24 @@ class ToroidalCache(object):
         tolarance=self.hysteresis+0.5
         
         xError=x-(offset+self.originX)
-        if abs(xError)>tolarance:
-            change=round(xError)
-            step=1 if change>0 else -1
-            while change!=0:
-                for yindex in xrange(self.originY,self.originY+self.size):
-                    if step==1:
-                        old=self.get(self.originX,yindex)
-                        new=self.replaceValue(self.originX+self.size,yindex,old)
-                        self.store(self.originX,yindex,new)
-                    else:
-                        old=self.get(self.originX-1,yindex)
-                        new=self.replaceValue(self.originX-1,yindex,old)
-                        self.store(self.originX-1,yindex,new)
-                change-=step
-                self.originX+=step
-
         yError=y-(offset+self.originY)
-        if abs(yError)>tolarance:
-            change=round(yError)
-            step=1 if change>0 else -1
-            while change!=0:
-                for xindex in xrange(self.originX,self.originX+self.size):
-                    if step==1:
-                        old=self.get(xindex,self.originY)
-                        new=self.replaceValue(xindex,self.originY+self.size,old)
-                        self.store(xindex,self.originY,new)
-                    else:
-                        old=self.get(xindex,self.originY-1)
-                        new=self.replaceValue(xindex,self.originY-1,old)
-                        self.store(xindex,self.originY-1,new)
-                change-=step
-                self.originY+=step
+        xChange=int(round(xError)) if abs(xError)>tolarance else 0
+        yChange=int(round(yError)) if abs(yError)>tolarance else 0
+        if xChange or yChange:
+            originX=self.originX+xChange
+            originY=self.originY+yChange
+            # check all the tiles to see if they need to be replaced
+            # this could be opimized to only check the ones that may have changed,
+            # but size is usally small, so this is quick and simpler
+            for yindex in xrange(originY,originY+self.size):
+                for xindex in xrange(originX,originX+self.size):
+                    if not self.inbounds(xindex,yindex):
+                        old=self.get(xindex,yindex)
+                        new=self.replaceValue(xindex,yindex,old)
+                        self.store(xindex,yindex,new)
+                    
+            self.originX=originX
+            self.originY=originY
         
     def inbounds(self,x,y):
         """
