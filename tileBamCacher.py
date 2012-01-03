@@ -6,7 +6,7 @@ it ouputs bam files, one per tile with all the LOD and such packed in
 """
 
 import os
-import os.path
+
 
 import json
 
@@ -17,19 +17,21 @@ from renderer.renderTiler import RenderNodeTiler
 
 from panda3d.core import NodePath
 
+from direct.stdpy.file import join
+
 def nameTile(x,y):
     return str(x)+"_"+str(y)
 
 dataFile="data.txt"
 
 def exportTile(dstDir,name,tile):
-    tile.writeBamFile(os.path.join(dstDir,name+".bam"))
+    tile.writeBamFile(join(dstDir,name+".bam"))
 
 def makeImportWrapper(call):
     def wrapper(srcDir,name,callback=None):
         def done(model):
             callback(call(RenderTile(model)))
-        path=os.path.join(srcDir,name+".bam")
+        path=join(srcDir,name+".bam")
         if callback:
             loader.loadModel(path,callback=done)
         else:
@@ -39,7 +41,7 @@ def makeImportWrapper(call):
 def importTile(srcDir,name,callback=None):
     def done(model):
         callback(RenderTile(model))
-    path=os.path.join(srcDir,name+".bam")
+    path=join(srcDir,name+".bam")
     if callback:
         loader.loadModel(path,callback=done)
     else:
@@ -80,7 +82,7 @@ def cache(dir,renderTileBakery,size,startX,startY,xCount,yCount,defaultX,default
         
 class CachedNodeBakery:
     def __init__(self,dir,importer):
-        path=os.path.join(dir,dataFile)
+        path=join(dir,dataFile)
         d=json.load(open(path,'r'))
         self.default=d['default']
         extraInfo=d['extraInfo']
@@ -148,7 +150,7 @@ class Bammer:
         self.default=(x,y)
         
     def finish(self):
-        f=open(os.path.join(self.dstDir,dataFile),"w")
+        f=open(join(self.dstDir,dataFile),"w")
         d={"default":self.default,
             "extraInfo":self.extraInfo,
             "tiles":list(self.processed)
