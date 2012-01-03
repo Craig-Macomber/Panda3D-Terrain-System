@@ -46,7 +46,10 @@ class FernFactory(gridFactory.GridFactory):
         if exists<.6: return
         quat=Quat()
         
-        pos=Vec3(x,y,tile.height(x,y))-tileCenter
+        height=tile.height(x,y)
+        if height is None: return
+        
+        pos=Vec3(x,y,height)-tileCenter
         self.drawFern(LOD,pos, quat,drawResourcesFactory,scale=scale)    
     
     def drawFern(self,LOD,pos,quat,drawResourcesFactory,scale=1.0):

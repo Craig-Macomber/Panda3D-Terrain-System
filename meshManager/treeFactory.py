@@ -77,8 +77,12 @@ class TreeFactory(gridFactory.GridFactory2):
         quat=Quat()
         quat.setHpr((random.random()*360,0,0))
         
+        height=tile.height(x,y)
+        if height is None: return
+        
+        
         heightOffset=-0.4 # make sure whole bottom of tree is in ground
-        pos=Vec3(x,y,tile.height(x,y)+heightOffset)-tileCenter
+        pos=Vec3(x,y,height+heightOffset)-tileCenter
         
         self.drawTree((pos, quat, 0, list(0 for x in drawResourcesFactories.iterkeys()), 0),drawResourcesFactories,collision,scale=scale)
                
