@@ -34,12 +34,13 @@ def rebuildGeomNodesToColPolys (incomingNode,relativeTo=None):
                 for p2 in range(prim.getNumPrimitives()): 
                     s = prim.getPrimitiveStart(p2) 
                     e = prim.getPrimitiveEnd(p2) 
-                    v = [] 
-                    for vi in range (s, e): 
-                        vreader.setRow(prim.getVertex(vi)) 
-                        v.append (xform(vreader.getData3f())) 
-                    colPoly = CollisionPolygon(*v) 
-                    cChild.addSolid(colPoly) 
+                    v = []
+                    if e-s>2:
+                        for vi in range (s, e): 
+                            vreader.setRow(prim.getVertex(vi)) 
+                            v.append (Point3(xform(vreader.getData3f())) )
+                        colPoly = CollisionPolygon(*v) 
+                        cChild.addSolid(colPoly) 
 
             n=parent.attachNewNode (cChild) 
             #n.show()

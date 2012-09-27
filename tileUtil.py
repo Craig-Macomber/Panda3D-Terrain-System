@@ -50,11 +50,10 @@ class BakeryManager(object):
                 new=self._makeTile(x,y)
                 self.midCache.store(x,y,new)
                 self.tileCache.store(x,y,new)
-                print "replaceRenderTile",x,y
                 self.render(new)
             return new
             
-        self.renderCach=ToroidalCache(minRenderSize,replaceRenderTile,tileX,tileY)
+        self.renderCache=ToroidalCache(minRenderSize,replaceRenderTile,tileX,tileY)
         # TODO : perhaps add some some of addational cache to save things when outside pregen
         #           LRU, weighted by generation time perhaps?
     
@@ -75,12 +74,12 @@ class BakeryManager(object):
                 return
             self.midCache.store(x,y,tile)
             self.render(tile)
-            if self.renderCach.inbounds(x,y):
-                t=self.renderCach.get(x,y)
+            if self.renderCache.inbounds(x,y):
+                t=self.renderCache.get(x,y)
                 if t is not None:
-                    print "_storeTile Error: tile exists in renderCach",x,y
+                    print "_storeTile Error: tile exists in renderCache",x,y
                     return
-                self.renderCach.store(x,y,tile)
+                self.renderCache.store(x,y,tile)
     
     
     def getTile(self,wx,wy):
@@ -113,7 +112,7 @@ class BakeryManager(object):
         
         self.tileCache.updateCenter(x,y)
         self.midCache.updateCenter(x,y)
-        self.renderCach.updateCenter(x,y)
+        self.renderCache.updateCenter(x,y)
         
         if not self.asyncBaking:
             minDistSquared=1000000
@@ -195,10 +194,12 @@ class ToroidalCache(object):
     def __init__(self,size,replaceValue,startX=0,startY=0,hysteresis=0.1):
         """
         replaceValue(x,y,old) where old is the previous tile, or None it there was none
+        startX and startX locate the center for starting, much like the x and y for updateCenter
+        see updateCenter for info about hysteresis
         """
         self.size=size
-        self.originX=ifloor(startX-size/2.0)
-        self.originY=ifloor(startY-size/2.0)
+        self.originX=ifloor(startX+.5-size/2.0)
+        self.originY=ifloor(startY+.5-size/2.0)
         self.hysteresis=hysteresis
         self.replaceValue=replaceValue
         self.data=[None]*(size**2)
@@ -207,7 +208,8 @@ class ToroidalCache(object):
                 tx=x+self.originX
                 ty=y+self.originY
                 self.store(tx,ty,self.replaceValue(tx,ty,None))
-    
+                
+        
     def updateCenter(self,x,y):
         """
         x and y can be floats or ints. If the passed x,y is further than hysteresis+0.5 from
