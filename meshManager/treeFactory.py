@@ -8,7 +8,8 @@ from terrain import collisionUtil
 
 
 class TreeFactory(gridFactory.GridFactory2):
-    def __init__(self,barkTexture=None,leafTexture=None,scalar=2.0,gridSize=5.0):
+    def __init__(self,barkTexture=None,leafTexture=None,scalar=2.0,gridSize=5.0,doTangentsAndBinormals=False):
+        self.doTangentsAndBinormals=doTangentsAndBinormals
         self.barkTexture=barkTexture
         self.leafTexture=leafTexture
         gridFactory.GridFactory2.__init__(self,scalar,gridSize)
@@ -302,6 +303,9 @@ class TreeFactory(gridFactory.GridFactory2):
                     else:
                         leafColorWriter = leafResources.getWriter("color")
                     
+                    if self.doTangentsAndBinormals:
+                        leafTangentWriter=leafResources.getWriter("tangent")
+                        leafBinormalWriter=leafResources.getWriter("binormal")
                     
                     for x in range(2):
                         leafRow = leafVertexWriter.getWriteRow()
@@ -336,6 +340,22 @@ class TreeFactory(gridFactory.GridFactory2):
                         leafNormalWriter.addData3f(n1) 
                         leafNormalWriter.addData3f(upVec) 
                         leafNormalWriter.addData3f(n2)
+                        
+                        if self.doTangentsAndBinormals:
+                            # TODO : This is just a random guess. Make it actually correct
+                            tangent=norm1.cross(dir1+dir2)
+                            tangent.normalize()
+                            binormalCenter=upVec.cross(tangent)
+                            binormal1=n1.cross(tangent)
+                            binormal2=n2.cross(tangent)
+                            leafTangentWriter.addData3f(tangent)
+                            leafTangentWriter.addData3f(tangent) 
+                            leafTangentWriter.addData3f(tangent) 
+                            leafTangentWriter.addData3f(tangent)
+                            leafBinormalWriter.addData3f(binormalCenter)
+                            leafBinormalWriter.addData3f(binormal1) 
+                            leafBinormalWriter.addData3f(binormalCenter) 
+                            leafBinormalWriter.addData3f(binormal2)
 
 #this is for making the tree not too straight 
 def _randomBend(inQuat, maxAngle=20):
