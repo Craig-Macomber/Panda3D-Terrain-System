@@ -68,11 +68,14 @@ def colTree (incomingNode):
     ''' 
     
     maxLevels=10
+    top=NodePath(CollisionNode('colTreeTop'))
     b=incomingNode.getBounds()
+    if b.isEmpty(): return top
+    
     maxSize=b.getCenter().length()+b.getRadius()
     maxSize*=1.1
     levels=[{} for i in range(maxLevels)]
-    top=NodePath(CollisionNode('colTreeTop'))
+    
     levels[0][(0,0,0)]=top
     
     offset=Point3(maxSize,maxSize,maxSize)
