@@ -7,7 +7,7 @@ groundMask=BitMask32(0b1)
 
 # from FenrirWolf via http://www.panda3d.org/forums/viewtopic.php?p=43705&sid=d5588e66bcedd9f7c7f51a3226ad890c
 # modified by Craig Macomber
-def rebuildGeomNodesToColPolys (incomingNode,relativeTo=None): 
+def rebuildGeomNodesToColPolys (incomingNode,relativeTo=None,filter=lambda n:True): 
     ''' 
     Converts GeomNodes into CollisionPolys in a straight 1-to-1 conversion 
 
@@ -16,6 +16,7 @@ def rebuildGeomNodesToColPolys (incomingNode,relativeTo=None):
     
     parent = NodePath('cGeomConversionParent') 
     for c in incomingNode.findAllMatches('**/+GeomNode'): 
+        if not filter: continue
         if relativeTo:
             xform=c.getMat(relativeTo).xformPoint
         else:
