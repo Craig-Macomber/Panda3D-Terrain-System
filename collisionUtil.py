@@ -4,7 +4,6 @@ import math
 
 groundMask=BitMask32(0b1)
 
-
 # from FenrirWolf via http://www.panda3d.org/forums/viewtopic.php?p=43705&sid=d5588e66bcedd9f7c7f51a3226ad890c
 # modified by Craig Macomber
 def rebuildGeomNodesToColPolys (incomingNode,relativeTo=None,filter=lambda n:True): 
@@ -12,40 +11,33 @@ def rebuildGeomNodesToColPolys (incomingNode,relativeTo=None,filter=lambda n:Tru
     Converts GeomNodes into CollisionPolys in a straight 1-to-1 conversion 
 
     Returns a new NodePath containing the CollisionNodes 
-    ''' 
-    
+    '''
     parent = NodePath('cGeomConversionParent') 
     for c in incomingNode.findAllMatches('**/+GeomNode'): 
-        if not filter: continue
+        if not filter(c): continue
         if relativeTo:
             xform=c.getMat(relativeTo).xformPoint
         else:
             xform=(c.getMat(incomingNode)*(incomingNode.getMat())).xformPoint
-        gni = 0 
         geomNode = c.node() 
         for g in range(geomNode.getNumGeoms()): 
             geom = geomNode.getGeom(g).decompose() 
             vdata = geom.getVertexData() 
             vreader = GeomVertexReader(vdata, 'vertex') 
-            cChild = CollisionNode('cGeom-%s-gni%i' % (c.getName(), gni)) 
-            
-            gni += 1 
+            cChild = CollisionNode("") 
             for p in range(geom.getNumPrimitives()): 
                 prim = geom.getPrimitive(p) 
                 for p2 in range(prim.getNumPrimitives()): 
                     s = prim.getPrimitiveStart(p2) 
                     e = prim.getPrimitiveEnd(p2) 
-                    v = []
                     if e-s>2:
+                        v = []
                         for vi in range (s, e): 
                             vreader.setRow(prim.getVertex(vi)) 
-                            v.append (Point3(xform(vreader.getData3f())) )
+                            v.append(Point3(xform(vreader.getData3f())) )
                         colPoly = CollisionPolygon(*v) 
                         cChild.addSolid(colPoly) 
-
-            n=parent.attachNewNode (cChild) 
-            #n.show()
-            
+            n=parent.attachNewNode(cChild)   
     return parent 
 
 
@@ -87,7 +79,7 @@ def colTree (incomingNode):
         d=levels[level]
         cell=d.get(key)
         if cell is None:
-            cell=NodePath(CollisionNode(str(key)))
+            cell=NodePath(CollisionNode(""))
             d[key]=cell
             if level>0:
                 aboveKey=(key[0]/2,key[1]/2,key[2]/2)
