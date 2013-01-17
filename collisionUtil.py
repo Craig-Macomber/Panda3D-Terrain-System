@@ -1,3 +1,26 @@
+"""
+Example Use:
+
+def processMap(mapNodePath)
+    col=getCollision(mapNodePath)
+    holder=NodePath("CollisionAndMeshHolder")
+    mapNodePath.reparentTo(holder)
+    col.reparentTo(holder)
+    
+    flattenStrong(mapNodePath)
+    return holder
+
+def collisionFilter(n):
+    return not n.hasNetTag("noCollision")
+
+def getCollision(node):
+    col=collisionUtil.rebuildGeomNodesToColPolys(node,filter=collisionFilter)
+    col=collisionUtil.colTree(col)
+    col.setCollideMask(collisionUtil.groundMask)
+    return col
+
+"""
+
 from panda3d.core import NodePath,CollisionPolygon,CollisionNode,GeomVertexReader,BitMask32,Point3,BoundingSphere
 
 import math
@@ -11,6 +34,10 @@ def rebuildGeomNodesToColPolys (incomingNode,relativeTo=None,filter=lambda n:Tru
     Converts GeomNodes into CollisionPolys in a straight 1-to-1 conversion 
 
     Returns a new NodePath containing the CollisionNodes 
+    
+    If the geometry is at all complex, running the result of this through colTree
+    should improve performance.
+    
     '''
     parent = NodePath('cGeomConversionParent') 
     for c in incomingNode.findAllMatches('**/+GeomNode'): 
@@ -58,6 +85,9 @@ def colTree (incomingNode):
     assumes all passed nodes are collision nodes with no transforms
     
     returns produced oct-tree nodePath
+    
+    This should increase the performance for doing collision tests, especially for large
+    models, like world maps
     ''' 
     
     maxLevels=10
