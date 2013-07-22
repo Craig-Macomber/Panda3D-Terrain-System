@@ -29,13 +29,18 @@ def exportTile(dstDir,name,tile):
 
 def makeImportWrapper(call):
     def wrapper(srcDir,name,callback=None):
+        def process(model):
+            return call(RenderTile(model))
         def done(model):
-            callback(call(RenderTile(model)))
+            callback(process(model))
         path=join(srcDir,name+".bam")
         if callback:
-            loader.loadModel(path,callback=done)
+            # TODO: Update this when Panda3d bug is fixed: https://bugs.launchpad.net/panda3d/+bug/1186880
+            # To work around this bug, disable async model loading
+            #loader.loadModel(path,callback=done)
+            done(loader.loadModel(path))
         else:
-            return call(RenderTile(loader.loadModel(path)))
+            return process(loader.loadModel(path))
     return wrapper
     
 def importTile(srcDir,name,callback=None):
