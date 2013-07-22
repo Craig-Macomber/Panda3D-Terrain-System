@@ -25,7 +25,8 @@ from panda3d.core import NodePath,CollisionPolygon,CollisionNode,GeomVertexReade
 
 import math
 
-groundMask=BitMask32(0b1)
+groundMask=BitMask32(1)
+pickingMask=BitMask32(2)
 
 # from FenrirWolf via http://www.panda3d.org/forums/viewtopic.php?p=43705&sid=d5588e66bcedd9f7c7f51a3226ad890c
 # modified by Craig Macomber
