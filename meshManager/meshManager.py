@@ -1,10 +1,10 @@
-from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat, GeomTriangles, GeomTristrips, LODNode, Vec3, RenderState
+from panda3d.core import NodePath, Geom, GeomNode, GeomVertexWriter, GeomVertexData, GeomVertexFormat, GeomTriangles, GeomTristrips, LODNode, Vec3, RenderState, CollisionNode
 import math
 
 import collections
 import heapq
 
-from terrain import tileUtil
+from terrain import tileUtil,collisionUtil
 
 """
 This module provides a MeshManager class and its assoiated classes.
@@ -208,13 +208,13 @@ class MeshManager(NodePath):
             
             tileCenter=Vec3(x+x2,y+y2,0)/2
             
-            collisionNode=NodePath("tile_collisionNode") if collision else None
+            collisionNode=NodePath(CollisionNode("tile_collisionNode")) if collision else None
             
             for l in levels: l.initForTile(tile)
             for f,levs in factoryToLevels.iteritems():
                 f.draw(dict((l.lod,l.drawResourcesFactory) for l in levs),x,y,x2,y2,tileCenter,collisionNode)
                 
-            
+            collisionUtil.colTree(collisionNode)
             lodNode=LODNode('tile_lod')
             lodNodePath=NodePath(lodNode)
             
